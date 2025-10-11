@@ -52,10 +52,12 @@ describe('runoff computations', () => {
     expect(result).toEqual({
       runoffDepthIn: expectedDepth,
       runoffVolumeAcFt: expectedVolume,
-      runoffCoefficient: expectedCoeff
+      runoffCoefficient: expectedCoeff,
+      rationalPeakCfs: computeRationalPeak(1.2, expectedCoeff, 15)
     });
     expect(result.runoffVolumeAcFt).toBeGreaterThan(0);
     expect(result.runoffCoefficient).toBeGreaterThan(0);
+    expect(result.rationalPeakCfs).toBeGreaterThan(0);
   });
 
   it('handles missing intensity by omitting rational peak from computation', () => {
@@ -63,5 +65,6 @@ describe('runoff computations', () => {
     expect(result.runoffDepthIn).toBeGreaterThan(0);
     expect(result.runoffVolumeAcFt).toBeGreaterThan(0);
     expect(result.runoffCoefficient).toBeGreaterThan(0);
+    expect(result.rationalPeakCfs).toBe(0);
   });
 });

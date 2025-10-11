@@ -13,6 +13,8 @@ export interface RunoffResult {
   runoffVolumeAcFt: number;
   /** Runoff coefficient used in rational formula (dimensionless). */
   runoffCoefficient: number;
+  /** Peak discharge from the rational method in cubic feet per second. */
+  rationalPeakCfs: number;
 }
 
 /**
@@ -80,6 +82,7 @@ export function computeRunoff(
   return {
     runoffDepthIn: runoffDepth,
     runoffVolumeAcFt: volume,
-    runoffCoefficient: coeff
+    runoffCoefficient: coeff,
+    rationalPeakCfs: peak
   };
 }
