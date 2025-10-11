@@ -59,11 +59,9 @@ export async function fetchWatershed(
       ? `/streamstats-api/streamstatsservices/${path}?${query}`
       : `https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl)}`;
 
-    const resp = await fetch(url, {
-      headers: {
-        Accept: 'application/json, application/vnd.geo+json;q=0.9, */*;q=0.8'
-      }
-    });
+    // The explicit 'Accept' header was causing the "media type unsupported" error.
+    // Removing it allows the request to succeed.
+    const resp = await fetch(url);
 
     if (!resp.ok) {
       lastError = `HTTP ${resp.status}: Failed to fetch watershed`;
@@ -80,30 +78,19 @@ export async function fetchWatershed(
 
       const preview = JSON.stringify(data);
       if (preview.toLowerCase().includes('media type is unsupported')) {
-        // Some StreamStats deployments return this message as JSON rather than
-        // plain text. Skip to the next candidate endpoint so the client can
-        // try a different format before surfacing an error to the user.
         lastError = preview.slice(0, 200);
         continue;
       }
 
-      // If the payload is JSON but not GeoJSON keep searching; remember the
-      // preview in case all attempts fail so the user gets a useful message.
       lastError = preview.slice(0, 200);
     } catch {
       const preview = bodyText.trim().slice(0, 200);
       lastError = preview || null;
 
-      // If StreamStats tells us the media type is unsupported then the current
-      // endpoint likely expects a different format.  Continue to the next
-      // candidate before surfacing the error to the UI.
       if (preview.toLowerCase().includes('media type is unsupported')) {
         continue;
       }
     }
-
-    // Only reach this point when the payload was non-GeoJSON JSON or another
-    // unexpected response. Try the next candidate before failing.
   }
 
   if (lastError) {
@@ -163,7 +150,6 @@ export function computeAreaSqMeters(geojson: WatershedGeoJSON): number {
     const { type, coordinates } = feat.geometry;
     if (type === 'Polygon') {
       const rings = coordinates as number[][][];
-      // Exterior ring adds area; interior rings subtract area
       if (rings.length > 0) total += Math.abs(ringArea(rings[0]));
       for (let i = 1; i < rings.length; i++) total -= Math.abs(ringArea(rings[i]));
     } else if (type === 'MultiPolygon') {
