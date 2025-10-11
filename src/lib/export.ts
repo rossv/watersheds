@@ -29,8 +29,14 @@ export function formatSwmmInp(sub: SwmmSubcatchment): string {
   lines.push('FLOW_UNITS	CFS');
   lines.push('');
   lines.push('[SUBCATCHMENTS]');
-  lines.push(';;Name	Rain Gage	Outlet	Area	%Imperv	Width	Slope	CurbLen	SnowPack');
-  lines.push(`${sub.name}\tRG1\t${sub.outlet}\t${sub.areaAc.toFixed(3)}\t${sub.pctImperv.toFixed(1)}\t${sub.width.toFixed(1)}\t${sub.slope.toFixed(3)}\t0\t`);
+  lines.push(';;Name\tRain Gage\tOutlet\tArea\t%Imperv\tWidth\tSlope\tCurbLen\tSnowPack');
+  lines.push(
+    `${sub.name}\tRG1\t${sub.outlet}\t${sub.areaAc.toFixed(3)}\t${sub.pctImperv.toFixed(1)}\t${sub.width.toFixed(1)}\t${sub.slope.toFixed(3)}\t0\t0`
+  );
+  lines.push('');
+  lines.push('[OUTFALLS]');
+  lines.push(';;Name\tElevation\tType\tStage Data\tGated\tRoute To');
+  lines.push(`${sub.outlet}\t0\tFREE\t\tNO\t`);
   lines.push('');
   lines.push('[RAINGAGES]');
   lines.push(';;Name	Format	Interval	SCF	Source');
