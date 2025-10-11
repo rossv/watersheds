@@ -10,10 +10,13 @@ import preprocess from 'svelte-preprocess';
  * production the app uses a CORS proxy (https://api.allorigins.win/raw)
  * inside the client code to fetch the same data.
  */
-export default defineConfig({
+const repositoryBasePath = '/watersheds/';
+
+export default defineConfig(({ command }) => ({
   plugins: [svelte({ preprocess: preprocess() })],
-  // Set this base path to your repository name when deploying to GitHub Pages.
-  base: '/watershed-web/',
+  // Use the repository name as the base path for production builds so assets
+  // resolve correctly on GitHub Pages. Keep the root path during local dev.
+  base: command === 'build' ? repositoryBasePath : '/',
   server: {
     proxy: {
       '/streamstats-api': {
@@ -37,4 +40,4 @@ export default defineConfig({
       include: ['src/lib/**/*.{ts,js}']
     }
   }
-});
+}));
