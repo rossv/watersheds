@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as L from 'leaflet';
+  import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png';
+  import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
+  import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
   import {
     fetchWatershed,
     computeAreaSqMeters,
@@ -162,13 +165,24 @@
     saveSwmmInp(sub, 'watershed.inp');
   }
 
+  const defaultMarkerIcon = L.icon({
+    iconRetinaUrl: markerIcon2xUrl,
+    iconUrl: markerIconUrl,
+    shadowUrl: markerShadowUrl,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    tooltipAnchor: [16, -28],
+    shadowSize: [41, 41]
+  });
+
   // Initialise Leaflet map when component mounts
   onMount(() => {
     map = L.map(mapDiv).setView([lat, lon], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-    marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+    marker = L.marker([lat, lon], { draggable: true, icon: defaultMarkerIcon }).addTo(map);
     marker.on('dragend', () => {
       const ll = marker!.getLatLng();
       lat = ll.lat;
