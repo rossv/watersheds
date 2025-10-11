@@ -52,8 +52,19 @@ export async function fetchWatershed(
   if (!resp.ok) {
     throw new Error(`HTTP ${resp.status}: Failed to fetch watershed`);
   }
-  const data = await resp.json();
-  return data as WatershedGeoJSON;
+
+  const bodyText = await resp.text();
+  try {
+    const data = JSON.parse(bodyText);
+    return data as WatershedGeoJSON;
+  } catch (err) {
+    const preview = bodyText.trim().slice(0, 200);
+    throw new Error(
+      preview
+        ? `StreamStats returned an unexpected response: ${preview}`
+        : 'StreamStats returned an empty response.'
+    );
+  }
 }
 
 /**
