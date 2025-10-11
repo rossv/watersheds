@@ -27,5 +27,14 @@ export default defineConfig({
         rewrite: (path: string) => path.replace(/^\/noaa-api/, '/cgi-bin/new')
       }
     }
+  },
+  test: {
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html'],
+      reportsDirectory: 'coverage',
+      include: ['src/lib/**/*.{ts,js}']
+    }
   }
 });
