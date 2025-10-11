@@ -124,6 +124,7 @@
       aris = table.aris;
       selectedDuration = durations[0];
       selectedAri = aris[0];
+      computeDepthAndIntensity();
     } catch (ex) {
       error = (ex as Error).message;
     }
