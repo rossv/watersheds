@@ -32,39 +32,94 @@ export async function fetchWatershed(
   lat: number,
   lon: number
 ): Promise<WatershedGeoJSON> {
-  // Construct the base query for StreamStats.  StreamStats expects
-  // longitude (x) and latitude (y) values and returns a GeoJSON object.
-  const baseUrl =
-    `https://streamstats.usgs.gov/streamstatsservices/watershed.geojson` +
-    `?x=${lon}&y=${lat}&inProj=4326&outProj=4326`;
+  const baseParams = new URLSearchParams({
+    x: lon.toString(),
+    y: lat.toString(),
+    inProj: '4326',
+    outProj: '4326'
+  });
 
-  let url: string;
-  if (import.meta.env.DEV) {
-    // Development: proxy through Vite server.  See vite.config.ts for the
-    // rewrite rule; we strip the prefix when forwarding the request.
-    url = `/streamstats-api/streamstatsservices/watershed.geojson?x=${lon}&y=${lat}&inProj=4326&outProj=4326`;
-  } else {
-    // Production: wrap through AllOrigins to bypass CORS.
-    url = `https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl)}`;
+  const candidateRequests: Array<{ path: string; params: URLSearchParams }> = [
+    // Newer deployments of the StreamStats service expect an explicit format
+    // parameter.  Try this first so we get a true GeoJSON payload when
+    // supported.
+    { path: 'watershed', params: new URLSearchParams({ ...Object.fromEntries(baseParams), format: 'geojson' }) },
+    // Fall back to the legacy .geojson endpoint which older deployments still
+    // support.  This mirrors the original behaviour of the client.
+    { path: 'watershed.geojson', params: new URLSearchParams(baseParams) }
+  ];
+
+  let lastError: string | null = null;
+
+  for (const { path, params } of candidateRequests) {
+    const query = params.toString();
+    const baseUrl = `https://streamstats.usgs.gov/streamstatsservices/${path}?${query}`;
+
+    const url = import.meta.env.DEV
+      ? `/streamstats-api/streamstatsservices/${path}?${query}`
+      : `https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl)}`;
+
+    const resp = await fetch(url, {
+      headers: {
+        Accept: 'application/json, application/vnd.geo+json;q=0.9, */*;q=0.8'
+      }
+    });
+
+    if (!resp.ok) {
+      lastError = `HTTP ${resp.status}: Failed to fetch watershed`;
+      continue;
+    }
+
+    const bodyText = await resp.text();
+
+    try {
+      const data = JSON.parse(bodyText);
+      if (isGeoJsonFeatureCollection(data)) {
+        return data;
+      }
+      // If the payload is JSON but not GeoJSON keep searching; remember the
+      // preview in case all attempts fail so the user gets a useful message.
+      lastError = JSON.stringify(data).slice(0, 200);
+    } catch {
+      const preview = bodyText.trim().slice(0, 200);
+      lastError = preview || null;
+
+      // If StreamStats tells us the media type is unsupported then the current
+      // endpoint likely expects a different format.  Continue to the next
+      // candidate before surfacing the error to the UI.
+      if (preview.toLowerCase().includes('media type is unsupported')) {
+        continue;
+      }
+    }
+
+    // Only reach this point when the payload was non-GeoJSON JSON or another
+    // unexpected response. Try the next candidate before failing.
   }
 
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`HTTP ${resp.status}: Failed to fetch watershed`);
-  }
-
-  const bodyText = await resp.text();
-  try {
-    const data = JSON.parse(bodyText);
-    return data as WatershedGeoJSON;
-  } catch (err) {
-    const preview = bodyText.trim().slice(0, 200);
+  if (lastError) {
     throw new Error(
-      preview
-        ? `StreamStats returned an unexpected response: ${preview}`
-        : 'StreamStats returned an empty response.'
+      `StreamStats returned an unexpected response: ${lastError}`
     );
   }
+
+  throw new Error('StreamStats returned an empty response.');
+}
+
+function isGeoJsonFeatureCollection(value: unknown): value is WatershedGeoJSON {
+  if (!value || typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  if (record.type !== 'FeatureCollection') return false;
+  if (!Array.isArray(record.features)) return false;
+  return record.features.every((feat) => {
+    if (!feat || typeof feat !== 'object') return false;
+    const f = feat as Record<string, unknown>;
+    if (f.type !== 'Feature') return false;
+    const geom = f.geometry as Record<string, unknown> | undefined;
+    if (!geom || typeof geom !== 'object') return false;
+    const geomType = geom.type;
+    if (geomType !== 'Polygon' && geomType !== 'MultiPolygon') return false;
+    return Array.isArray(geom.coordinates);
+  });
 }
 
 /**
