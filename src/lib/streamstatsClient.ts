@@ -77,9 +77,19 @@ export async function fetchWatershed(
       if (isGeoJsonFeatureCollection(data)) {
         return data;
       }
+
+      const preview = JSON.stringify(data);
+      if (preview.toLowerCase().includes('media type is unsupported')) {
+        // Some StreamStats deployments return this message as JSON rather than
+        // plain text. Skip to the next candidate endpoint so the client can
+        // try a different format before surfacing an error to the user.
+        lastError = preview.slice(0, 200);
+        continue;
+      }
+
       // If the payload is JSON but not GeoJSON keep searching; remember the
       // preview in case all attempts fail so the user gets a useful message.
-      lastError = JSON.stringify(data).slice(0, 200);
+      lastError = preview.slice(0, 200);
     } catch {
       const preview = bodyText.trim().slice(0, 200);
       lastError = preview || null;
