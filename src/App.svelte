@@ -68,6 +68,10 @@
     error = '';
     delineated = false;
     rainfallTable = null;
+    rainfallDepth = 0;
+    rainfallIntensity = null;
+    selectedDuration = '';
+    selectedAri = '';
     runoffDepth = runoffVolume = runoffCoeff = peakFlow = 0;
     try {
       watershed = await fetchWatershed(lat, lon);
@@ -103,6 +107,10 @@
   async function fetchRainfall() {
     error = '';
     rainfallTable = null;
+    rainfallDepth = 0;
+    rainfallIntensity = null;
+    selectedDuration = '';
+    selectedAri = '';
     runoffDepth = runoffVolume = runoffCoeff = peakFlow = 0;
     try {
       const csv = await fetchRainfallCSV(lat, lon);
