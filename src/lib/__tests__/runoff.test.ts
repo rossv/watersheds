@@ -19,6 +19,13 @@ describe('runoff computations', () => {
     expect(computeRunoffDepthCN(0.5, 75)).toBe(0);
     expect(computeRunoffDepthCN(5, 0)).toBe(0);
     expect(computeRunoffDepthCN(5, 150)).toBe(0);
+    expect(computeRunoffDepthCN(-1, 80)).toBe(0);
+    expect(computeRunoffDepthCN(Number.NaN, 80)).toBe(0);
+  });
+
+  it('returns full runoff when curve number is 100', () => {
+    expect(computeRunoffDepthCN(2, 100)).toBe(2);
+    expect(computeRunoffDepthCN(10, 100)).toBe(10);
   });
 
   it('computes runoff volume in acre-feet', () => {

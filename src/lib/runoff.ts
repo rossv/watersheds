@@ -25,8 +25,10 @@ export interface RunoffResult {
  * @param cn Curve number (dimensionless, typically 30–100)
  */
 export function computeRunoffDepthCN(p: number, cn: number): number {
-  if (cn <= 0 || cn >= 100 || !Number.isFinite(p)) return 0;
+  if (!Number.isFinite(p) || p <= 0) return 0;
+  if (!Number.isFinite(cn) || cn <= 0 || cn > 100) return 0;
   const S = (1000 / cn) - 10; // potential maximum retention (in)
+  if (S === 0) return p; // CN of 100 represents impervious conditions
   const Ia = 0.2 * S; // initial abstraction (in)
   if (p <= Ia) return 0;
   return ((p - Ia) * (p - Ia)) / (p - Ia + S);
