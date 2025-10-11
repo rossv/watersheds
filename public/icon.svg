@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A simple droplet icon for the Watershed Web app. Feel free to replace
+       this file with your own logo by dropping a new SVG here. -->
+  <path fill="#4a90e2" d="M32 2c-4.4 9.9-14 19.9-14 29a14 14 0 1 0 28 0c0-9-9.6-19-14-29z"/>
+</svg>
