@@ -184,121 +184,369 @@
   });
 </script>
 
-<div class="container">
-  <div class="controls">
-    <div class="row">
-      <label>
-        Latitude:
-        <input type="number" bind:value={lat} step="0.0001" />
-      </label>
-      <label>
-        Longitude:
-        <input type="number" bind:value={lon} step="0.0001" />
-      </label>
-      <button on:click={delineate}>Delineate</button>
-    </div>
-    {#if delineated}
-      <div class="row info">
-        <span>Area: {areaAc.toFixed(2)} acres</span>
-        <button on:click={fetchRainfall}>Fetch Rainfall</button>
-      </div>
-    {/if}
-    {#if rainfallTable}
-      <div class="row">
-        <label>
-          Duration:
-          <select bind:value={selectedDuration} on:change={computeDepthAndIntensity}>
-            {#each durations as d}
-              <option value={d}>{d}</option>
-            {/each}
-          </select>
-        </label>
-        <label>
-          ARI (years):
-          <select bind:value={selectedAri} on:change={computeDepthAndIntensity}>
-            {#each aris as a}
-              <option value={a}>{a}</option>
-            {/each}
-          </select>
-        </label>
-        <button on:click={computeDepthAndIntensity}>Select</button>
-      </div>
-    {/if}
-    {#if rainfallDepth > 0}
-      <div class="row info">
-        <span>Rainfall depth: {rainfallDepth.toFixed(2)} in</span>
-        {#if rainfallIntensity != null}
-          <span>Intensity: {rainfallIntensity.toFixed(2)} in/hr</span>
+<div class="app">
+  <header class="hero">
+    <h1>Watershed Response Explorer</h1>
+    <p>
+      Pick a location, delineate its watershed, and evaluate rainfall-driven runoff in just a few
+      taps. Follow the guided steps below for the best experience on any device.
+    </p>
+  </header>
+
+  <div class="content">
+    <aside class="sidebar" aria-label="Workflow instructions">
+      <section class="card">
+        <h2>How to get started</h2>
+        <ol>
+          <li><strong>Pan or tap</strong> on the map to drop the location marker.</li>
+          <li>
+            Enter precise latitude and longitude if you need accuracy, then choose
+            <em>Delineate</em>.
+          </li>
+          <li>
+            After the boundary appears, fetch design storm depths and select the duration/ARI pair
+            that matches your scenario.
+          </li>
+          <li>
+            Adjust the curve number (CN) and compute runoff to review depths, volumes, and peak
+            discharge.
+          </li>
+          <li>
+            Export to SWMM to continue hydraulic modelling in your preferred workflow.
+          </li>
+        </ol>
+      </section>
+      <section class="card tips">
+        <h3>UX tips</h3>
+        <ul>
+          <li>Use two fingers to zoom the map on mobile.</li>
+          <li>The marker is draggable—press and hold before moving it.</li>
+          <li>
+            Rainfall tables occasionally take a few seconds to download. Stay on the screen until
+            options appear.
+          </li>
+          <li>Calculated results update each time you change rainfall or CN inputs.</li>
+        </ul>
+      </section>
+    </aside>
+
+    <main class="workflow" aria-label="Watershed configuration">
+      <section class="card">
+        <h2>Location</h2>
+        <p class="helper-text">Tap the map or type coordinates below.</p>
+        <div class="row">
+          <label>
+            Latitude
+            <input type="number" bind:value={lat} step="0.0001" />
+          </label>
+          <label>
+            Longitude
+            <input type="number" bind:value={lon} step="0.0001" />
+          </label>
+        </div>
+        <button class="primary" on:click={delineate}>Delineate watershed</button>
+        {#if delineated}
+          <p class="status">Boundary ready: {areaAc.toFixed(2)} acres</p>
         {/if}
-      </div>
-      <div class="row">
-        <label>
-          Curve Number:
-          <input type="number" min="30" max="100" bind:value={cn} step="1" />
-        </label>
-        <button on:click={computeRunoffValues}>Compute Runoff</button>
-      </div>
-    {/if}
-    {#if runoffDepth > 0}
-      <div class="row info">
-        <span>Runoff depth: {runoffDepth.toFixed(2)} in</span>
-        <span>Runoff volume: {runoffVolume.toFixed(2)} acre‑ft</span>
-        <span>Runoff coeff: {runoffCoeff.toFixed(2)}</span>
-        {#if peakFlow > 0}
-          <span>Peak discharge: {peakFlow.toFixed(2)} cfs</span>
-        {/if}
-      </div>
-      <button on:click={exportSwmm}>Export SWMM</button>
-    {/if}
-    {#if error}
-      <div class="error">{error}</div>
-    {/if}
+      </section>
+
+      {#if delineated}
+        <section class="card">
+          <h2>Rainfall</h2>
+          <p class="helper-text">Fetch NOAA Atlas 14 data near your location.</p>
+          <button class="secondary" on:click={fetchRainfall}>Fetch rainfall table</button>
+          {#if rainfallTable}
+            <div class="row">
+              <label>
+                Duration
+                <select bind:value={selectedDuration} on:change={computeDepthAndIntensity}>
+                  {#each durations as d}
+                    <option value={d}>{d}</option>
+                  {/each}
+                </select>
+              </label>
+              <label>
+                ARI (years)
+                <select bind:value={selectedAri} on:change={computeDepthAndIntensity}>
+                  {#each aris as a}
+                    <option value={a}>{a}</option>
+                  {/each}
+                </select>
+              </label>
+            </div>
+            <button class="secondary" on:click={computeDepthAndIntensity}>Update rainfall</button>
+          {/if}
+          {#if rainfallDepth > 0}
+            <div class="summary">
+              <span>Depth: {rainfallDepth.toFixed(2)} in</span>
+              {#if rainfallIntensity != null}
+                <span>Intensity: {rainfallIntensity.toFixed(2)} in/hr</span>
+              {/if}
+            </div>
+          {/if}
+        </section>
+      {/if}
+
+      {#if rainfallDepth > 0}
+        <section class="card">
+          <h2>Runoff</h2>
+          <p class="helper-text">Curve Number defaults to mixed suburban land use.</p>
+          <div class="row">
+            <label>
+              Curve Number (30–100)
+              <input type="number" min="30" max="100" bind:value={cn} step="1" />
+            </label>
+          </div>
+          <button class="primary" on:click={computeRunoffValues}>Compute runoff</button>
+          {#if runoffDepth > 0}
+            <div class="summary">
+              <span>Runoff depth: {runoffDepth.toFixed(2)} in</span>
+              <span>Volume: {runoffVolume.toFixed(2)} acre‑ft</span>
+              <span>Coeff: {runoffCoeff.toFixed(2)}</span>
+              {#if peakFlow > 0}
+                <span>Peak flow: {peakFlow.toFixed(2)} cfs</span>
+              {/if}
+            </div>
+            <button class="secondary" on:click={exportSwmm}>Export SWMM file</button>
+          {/if}
+        </section>
+      {/if}
+
+      {#if error}
+        <section class="card error-card" role="alert">
+          <h2>Heads up</h2>
+          <p>{error}</p>
+        </section>
+      {/if}
+    </main>
+
+    <section class="map-panel" aria-label="Interactive map">
+      <div id="map" bind:this={mapDiv} role="application" aria-describedby="map-help"></div>
+      <p id="map-help" class="map-help">
+        Tap anywhere to move the marker, or drag the pin for fine adjustments. Map tiles courtesy of
+        OpenStreetMap.
+      </p>
+    </section>
   </div>
-  <div id="map" bind:this={mapDiv}></div>
 </div>
 
 <style>
-  .container {
+  :global(body) {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f3f4f6;
+    color: #1f2933;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .hero {
+    padding: 1.5rem clamp(1rem, 3vw, 2.5rem);
+    background: linear-gradient(135deg, #0b7285, #31a69d);
+    color: white;
+    text-align: left;
+  }
+
+  .hero h1 {
+    margin: 0 0 0.5rem;
+    font-size: clamp(1.5rem, 5vw, 2.4rem);
+  }
+
+  .hero p {
+    margin: 0;
+    max-width: 48rem;
+    line-height: 1.5;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: clamp(1rem, 3vw, 2.5rem);
+    flex: 1;
+  }
+
+  .sidebar,
+  .workflow,
+  .map-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px -20px rgba(15, 23, 42, 0.35);
+  }
+
+  .card h2,
+  .card h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  .card p {
+    margin-top: 0;
+  }
+
+  .card ol,
+  .card ul {
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+
+  .card li + li {
+    margin-top: 0.5rem;
+  }
+
+  .tips ul {
+    list-style: disc;
+  }
+
+  .workflow .row {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    height: 100vh;
   }
-  .controls {
-    padding: 0.5rem;
-    background: #f8f9fa;
-    border-bottom: 1px solid #ddd;
-  }
-  .controls .row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-  }
-  .controls label {
+
+  label {
     display: flex;
     flex-direction: column;
-    font-size: 0.9rem;
-  }
-  .controls input[type='number'],
-  .controls select {
-    padding: 0.25rem;
-    font-size: 0.9rem;
-    width: 8rem;
-  }
-  .controls button {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-  .controls .info {
+    gap: 0.25rem;
+    font-size: 0.95rem;
     font-weight: 500;
   }
-  #map {
-    flex-grow: 1;
+
+  input[type='number'],
+  select {
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #cbd5e1;
+    font-size: 1rem;
+    background: #fff;
+    color: inherit;
   }
-  .error {
-    color: #b00020;
-    margin-top: 0.5rem;
+
+  button {
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+
+  button:focus-visible {
+    outline: 3px solid #0ea5e9;
+    outline-offset: 2px;
+  }
+
+  button.primary {
+    background: #0f766e;
+    color: white;
+    box-shadow: 0 10px 20px -10px rgba(15, 118, 110, 0.6);
+  }
+
+  button.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px -12px rgba(15, 118, 110, 0.55);
+  }
+
+  button.secondary {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
+  button.secondary:hover {
+    transform: translateY(-1px);
+  }
+
+  .helper-text {
+    color: #52606d;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+  }
+
+  .status {
+    margin-top: 0.75rem;
+    font-weight: 600;
+    color: #0f766e;
+  }
+
+  .summary {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    color: #0f172a;
+  }
+
+  .error-card {
+    border-left: 4px solid #f97316;
+  }
+
+  .error-card h2 {
+    color: #d9480f;
+  }
+
+  .map-panel {
+    flex: 1;
+  }
+
+  #map {
+    flex: 1;
+    min-height: 320px;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 18px 36px -24px rgba(15, 23, 42, 0.45);
+  }
+
+  .map-help {
+    margin: 0.75rem 0 0;
+    color: #52606d;
+    font-size: 0.9rem;
+  }
+
+  @media (min-width: 960px) {
+    .content {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .sidebar {
+      flex: 0 0 320px;
+    }
+
+    .workflow {
+      flex: 0 0 340px;
+    }
+
+    .map-panel {
+      flex: 1;
+      min-height: 520px;
+    }
+
+    .workflow .row {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+
+    .workflow .row label {
+      flex: 1;
+    }
+
+    .workflow .row label + label {
+      margin-left: 1rem;
+    }
+
+    .summary {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
   }
 </style>
