@@ -25,8 +25,8 @@ export interface RainfallTable {
 /**
  * Fetch the raw NOAA table CSV for the given coordinate.  In development
  * mode this uses the `/noaa-api` proxy defined in vite.config.ts.  In
- * production the request is wrapped through https://api.allorigins.win/raw
- * to avoid CORS issues on GitHub Pages.
+ * production the request is wrapped through a public CORS proxy to work
+ * around CORS issues on GitHub Pages.
  *
  * @param lat Latitude in decimal degrees
  * @param lon Longitude in decimal degrees
@@ -40,15 +40,31 @@ export async function fetchRainfallCSV(lat: number, lon: number): Promise<string
     // Proxy through Vite for development
     url = `/noaa-api/fe_text_mean.csv?data=depth&lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}&series=pds&units=english`;
   } else {
-    // Wrap via AllOrigins in production
-    url = `https://api.allorigins.win/raw?url=${encodeURIComponent(noaaBase)}`;
+    // Wrap via a reliable CORS proxy in production
+    url = `https://cors-anywhere.herokuapp.com/${noaaBase}`;
   }
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`HTTP ${resp.status}: Failed to fetch NOAA data`);
+  
+  console.log('Attempting to fetch rainfall data from URL:', url);
+
+  try {
+      const resp = await fetch(url);
+
+      console.log('Fetch response status for rainfall data:', resp.status);
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        console.error('Fetch failed with status:', resp.status, 'Response:', errorText);
+        throw new Error(`HTTP ${resp.status}: Failed to fetch NOAA data. Proxy responded with: ${errorText}`);
+      }
+
+      const text = await resp.text();
+      console.log("Successfully fetched raw rainfall data:", text);
+      return text;
+
+  } catch (error) {
+      console.error('An error occurred during the rainfall fetch operation:', error);
+      throw new Error('Failed to fetch the data. This might be due to a network issue or the CORS proxy being temporarily unavailable.');
   }
-  const text = await resp.text();
-  return text;
 }
 
 // Regular expression to match duration labels like "1 hr", "15 min", etc.
@@ -67,10 +83,16 @@ export function parseRainfallCSV(text: string): RainfallTable | null {
   // Find the header row with the ARI list.  NOAA uses "ARI (years)" as a
   // marker.  Everything after that token are the return periods.
   const header = lines.find((line) => line.includes('ARI (years)'));
-  if (!header) return null;
+  if (!header) {
+      console.error("Could not find 'ARI (years)' header in the rainfall data.");
+      return null;
+  }
   const headerTail = header.split('ARI (years)').pop() ?? '';
   const aris = (headerTail.match(/\b\d+\b/g) ?? []).map((ari) => ari);
-  if (aris.length === 0) return null;
+  if (aris.length === 0) {
+      console.error("Could not parse any ARI values from the rainfall data header.");
+      return null;
+  }
 
   const rows: RainfallRow[] = [];
   for (const line of lines) {
@@ -86,6 +108,9 @@ export function parseRainfallCSV(text: string): RainfallTable | null {
     }
     rows.push({ label, values });
   }
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+      console.error("No valid data rows could be parsed from the rainfall text.");
+      return null;
+  }
   return { aris, rows };
 }
