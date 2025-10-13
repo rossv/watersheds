@@ -1,11 +1,12 @@
 /**
- * StreamStats client — fixed CORS proxy + new API params.
+ * StreamStats client — fixed CORS proxy + new API params + area helper.
  * - Uses xlocation/ylocation (new API)
  * - Wraps production requests via https://cors.bridged.cc/
  * - Sends Accept + Origin headers so the proxy is happy
+ * - Exports computeAreaSqMeters(geojson) for watershed area in m²
  */
 
-export type WatershedGeoJSON = GeoJSON.FeatureCollection;
+export type WatershedGeoJSON = GeoJSON.FeatureCollection<GeoJSON.Geometry>;
 
 type FetchOpts = {
   lat: number;     // +N
@@ -19,7 +20,6 @@ type FetchOpts = {
 const STREAMSTATS_BASE =
   "https://streamstats.usgs.gov/streamstatsservices/watershed.geojson";
 
-// In dev (Vite), call target directly; in prod (GitHub Pages), go through proxy
 function isDev() {
   try {
     // Vite defines this; if you're not on Vite, set VITE_DEV=true in .env.local
@@ -45,7 +45,7 @@ function buildWatershedUrl({
   simplify = true
 }: FetchOpts): string {
   const params = new URLSearchParams();
-  if (rcode) params.set("rcode", rcode); // optional; API will figure it out if omitted
+  if (rcode) params.set("rcode", rcode); // optional; API can infer if omitted
   params.set("xlocation", String(lon));
   params.set("ylocation", String(lat));
   params.set("crs", "4326");
@@ -65,30 +65,23 @@ export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON>
 
   const res = await fetch(url, {
     method: "GET",
-    // The proxy wants an Origin header to mirror; use current site if present.
     headers: {
       Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
-      // Some proxies choke without this:
       Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
-      "X-Requested-With": "fetch" // satisfies some proxy variants
+      "X-Requested-With": "fetch"
     }
   });
 
-  // If proxy sends HTML error page, this will catch it before JSON.parse explodes.
   const contentType = res.headers.get("content-type") || "";
 
   if (!res.ok) {
     const preview = await safePreview(res);
-    throw new Error(
-      `StreamStats request failed (${res.status}) — ${preview}`
-    );
+    throw new Error(`StreamStats request failed (${res.status}) — ${preview}`);
   }
 
   if (!/json/i.test(contentType)) {
-    // Try to parse anyway (some servers forget the header)
     try {
-      const data = (await res.json()) as WatershedGeoJSON;
-      return data;
+      return (await res.json()) as WatershedGeoJSON;
     } catch {
       const preview = await safePreview(res);
       throw new Error(
@@ -111,4 +104,63 @@ async function safePreview(res: Response): Promise<string> {
 
 function truncate(s: string, n: number) {
   return s.length <= n ? s : s.slice(0, n) + "…";
+}
+
+/* ===========================
+   Area helper (m²) — no deps
+   =========================== */
+
+/**
+ * Compute total area (m²) of Polygon/MultiPolygon features in a GeoJSON FeatureCollection.
+ * Uses Web Mercator projection (sufficient accuracy for watershed sizing & UI).
+ */
+export function computeAreaSqMeters(fc: WatershedGeoJSON): number {
+  let total = 0;
+
+  for (const feat of fc.features ?? []) {
+    if (!feat || !feat.geometry) continue;
+
+    if (feat.geometry.type === "Polygon") {
+      total += polygonAreaMeters(feat.geometry.coordinates as GeoJSON.Position[][]);
+    } else if (feat.geometry.type === "MultiPolygon") {
+      const polys = feat.geometry.coordinates as GeoJSON.Position[][][];
+      for (const poly of polys) {
+        total += polygonAreaMeters(poly);
+      }
+    }
+  }
+  return Math.max(0, total);
+}
+
+function polygonAreaMeters(rings: GeoJSON.Position[][]): number {
+  if (!rings || rings.length === 0) return 0;
+
+  // Outer ring area minus holes
+  let area = ringAreaMeters(rings[0]);
+  for (let i = 1; i < rings.length; i++) {
+    area -= ringAreaMeters(rings[i]); // subtract holes
+  }
+  return Math.abs(area);
+}
+
+function ringAreaMeters(coords: GeoJSON.Position[]): number {
+  // Project lon/lat -> Web Mercator meters, then shoelace
+  const pts = coords.map(([lon, lat]) => lonLatToWebMercator(lon, lat));
+  let sum = 0;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [x1, y1] = pts[j];
+    const [x2, y2] = pts[i];
+    sum += (x1 * y2) - (x2 * y1);
+  }
+  return Math.abs(sum) * 0.5;
+}
+
+function lonLatToWebMercator(lon: number, lat: number): [number, number] {
+  // EPSG:3857
+  const R = 6378137; // meters
+  const λ = (lon * Math.PI) / 180;
+  const φ = (lat * Math.PI) / 180;
+  const x = R * λ;
+  const y = R * Math.log(Math.tan(Math.PI / 4 + φ / 2));
+  return [x, y];
 }
