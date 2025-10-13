@@ -1,5 +1,5 @@
 /**
- * StreamStats client — updated to align with the successful proxy strategy
+ * StreamStats client — final attempt to align with the successful proxy strategy
  * used in rainfall.ts, using api.allorigins.win with required headers.
  */
 
@@ -66,7 +66,7 @@ export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON>
   const res = await fetch(fetchUrl, {
     method: "GET",
     headers: {
-      // These headers are included to match the working implementation in rainfall.ts
+      // These headers are critical and match the working implementation in rainfall.ts
       Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
       Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
       "X-Requested-With": "fetch"
@@ -78,13 +78,17 @@ export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON>
     throw new Error(`StreamStats request failed (${res.status}) — ${preview}`);
   }
 
+  const textResponse = await res.text();
+  if (!textResponse) {
+      throw new Error("Failed to fetch watershed data: The CORS proxy returned an empty response. The StreamStats API may be temporarily unavailable or blocking the proxy.");
+  }
+
   try {
-    const data = await res.json();
+    const data = JSON.parse(textResponse);
     return data as WatershedGeoJSON;
   } catch (e) {
-    const preview = await safePreview(res);
     throw new Error(
-      `Failed to parse JSON response. The server may be down or the CORS proxy may have failed. Preview: ${preview}`
+      `Failed to parse JSON response. The server may be down or the CORS proxy may have failed. Preview: ${truncate(textResponse.replace(/\s+/g, " "), 280)}`
     );
   }
 }
