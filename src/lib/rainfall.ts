@@ -97,3 +97,61 @@ function parseCsvLine(line: string): string[] {
   const out: string[] = [];
   let cur = "";
   let i = 0;
+  let inQuotes = false;
+
+  while (i < line.length) {
+    const ch = line[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        const next = line[i + 1];
+        if (next === '"') {
+          // Escaped quote
+          cur += '"';
+          i += 2;
+          continue;
+        }
+
+        inQuotes = false;
+        i++;
+        continue;
+      }
+
+      cur += ch;
+      i++;
+      continue;
+    }
+
+    if (ch === ',') {
+      out.push(cur);
+      cur = "";
+      i++;
+      continue;
+    }
+
+    if (ch === '"') {
+      inQuotes = true;
+      i++;
+      continue;
+    }
+
+    cur += ch;
+    i++;
+  }
+
+  out.push(cur);
+  return out;
+}
+
+async function safePreview(res: Response): Promise<string> {
+  try {
+    const txt = await res.text();
+    return truncate(txt.replace(/\s+/g, " "), 280);
+  } catch {
+    return "<no body>";
+  }
+}
+
+function truncate(s: string, n: number) {
+  return s.length <= n ? s : s.slice(0, n) + "…";
+}
