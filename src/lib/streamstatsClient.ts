@@ -1,20 +1,17 @@
 /**
- * StreamStats client — fixed CORS proxy + new API params + area helper.
- * - Uses xlocation/ylocation (new API)
- * - Wraps production requests via https://cors.bridged.cc/
- * - Sends Accept + Origin headers so the proxy is happy
- * - Exports computeAreaSqMeters(geojson) for watershed area in m²
+ * StreamStats client — updated to use a more reliable CORS proxy and provide
+ * better error handling.
  */
 
 export type WatershedGeoJSON = GeoJSON.FeatureCollection<GeoJSON.Geometry>;
 
 type FetchOpts = {
-  lat: number;     // +N
-  lon: number;     // +E (negative for W)
-  rcode?: string;  // optional 2–3 char state/region code, e.g. "PA"
-  includeParameters?: boolean;   // default true
-  includeFeatures?: boolean;     // default true
-  simplify?: boolean;            // default true
+  lat: number;
+  lon: number;
+  rcode?: string;
+  includeParameters?: boolean;
+  includeFeatures?: boolean;
+  simplify?: boolean;
 };
 
 const STREAMSTATS_BASE =
@@ -22,18 +19,11 @@ const STREAMSTATS_BASE =
 
 function isDev() {
   try {
-    // Vite defines this; if you're not on Vite, set VITE_DEV=true in .env.local
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return !!(import.meta as any)?.env?.DEV;
   } catch {
     return false;
   }
-}
-
-function proxify(url: string): string {
-  if (isDev()) return url;
-  // Use the same proxy as designstorms-main for consistency
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
 function buildWatershedUrl({
@@ -45,7 +35,7 @@ function buildWatershedUrl({
   simplify = true
 }: FetchOpts): string {
   const params = new URLSearchParams();
-  if (rcode) params.set("rcode", rcode); // optional; API can infer if omitted
+  if (rcode) params.set("rcode", rcode);
   params.set("xlocation", String(lon));
   params.set("ylocation", String(lat));
   params.set("crs", "4326");
@@ -60,37 +50,40 @@ function buildWatershedUrl({
  * Throws an Error with a friendly message if the server returns non-200.
  */
 export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON> {
-  const direct = buildWatershedUrl(opts);
-  const url = proxify(direct);
+  const directUrl = buildWatershedUrl(opts);
+  
+  let fetchUrl = '';
+  if (isDev()) {
+    // In development, use the local proxy path from vite.config.ts.
+    // We construct a relative path that Vite will intercept.
+    const params = new URL(directUrl).search;
+    fetchUrl = `/streamstats-api/streamstatsservices/watershed.geojson${params}`;
+  } else {
+    // In production, use the allorigins.win CORS proxy.
+    fetchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
+  }
 
-  const res = await fetch(url, {
+  const res = await fetch(fetchUrl, {
     method: "GET",
     headers: {
       Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
-      Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
-      "X-Requested-With": "fetch"
     }
   });
-
-  const contentType = res.headers.get("content-type") || "";
 
   if (!res.ok) {
     const preview = await safePreview(res);
     throw new Error(`StreamStats request failed (${res.status}) — ${preview}`);
   }
 
-  if (!/json/i.test(contentType)) {
-    try {
-      return (await res.json()) as WatershedGeoJSON;
-    } catch {
-      const preview = await safePreview(res);
-      throw new Error(
-        `Expected JSON/GeoJSON but got "${contentType || "unknown"}". Preview: ${preview}`
-      );
-    }
+  try {
+    const data = await res.json();
+    return data as WatershedGeoJSON;
+  } catch (e) {
+    const preview = await safePreview(res);
+    throw new Error(
+      `Failed to parse JSON response. The server may be down or the CORS proxy may have failed. Preview: ${preview}`
+    );
   }
-
-  return (await res.json()) as WatershedGeoJSON;
 }
 
 async function safePreview(res: Response): Promise<string> {
@@ -135,16 +128,14 @@ export function computeAreaSqMeters(fc: WatershedGeoJSON): number {
 function polygonAreaMeters(rings: GeoJSON.Position[][]): number {
   if (!rings || rings.length === 0) return 0;
 
-  // Outer ring area minus holes
   let area = ringAreaMeters(rings[0]);
   for (let i = 1; i < rings.length; i++) {
-    area -= ringAreaMeters(rings[i]); // subtract holes
+    area -= ringAreaMeters(rings[i]);
   }
   return Math.abs(area);
 }
 
 function ringAreaMeters(coords: GeoJSON.Position[]): number {
-  // Project lon/lat -> Web Mercator meters, then shoelace
   const pts = coords.map(([lon, lat]) => lonLatToWebMercator(lon, lat));
   let sum = 0;
   for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
@@ -156,8 +147,7 @@ function ringAreaMeters(coords: GeoJSON.Position[]): number {
 }
 
 function lonLatToWebMercator(lon: number, lat: number): [number, number] {
-  // EPSG:3857
-  const R = 6378137; // meters
+  const R = 6378137;
   const λ = (lon * Math.PI) / 180;
   const φ = (lat * Math.PI) / 180;
   const x = R * λ;
