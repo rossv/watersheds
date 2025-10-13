@@ -1,6 +1,6 @@
 /**
- * StreamStats client — updated to use a more reliable CORS proxy and provide
- * better error handling.
+ * StreamStats client — updated to use the bridged CORS proxy with required headers
+ * and modern API parameters for better reliability.
  */
 
 export type WatershedGeoJSON = GeoJSON.FeatureCollection<GeoJSON.Geometry>;
@@ -26,6 +26,9 @@ function isDev() {
   }
 }
 
+/**
+ * Builds the direct URL for the StreamStats API with modern parameters.
+ */
 function buildWatershedUrl({
   lat,
   lon,
@@ -51,22 +54,24 @@ function buildWatershedUrl({
  */
 export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON> {
   const directUrl = buildWatershedUrl(opts);
-  
-  let fetchUrl = '';
+  let fetchUrl: string;
+
   if (isDev()) {
-    // In development, use the local proxy path from vite.config.ts.
-    // We construct a relative path that Vite will intercept.
+    // In development, construct a relative path for the Vite proxy.
     const params = new URL(directUrl).search;
     fetchUrl = `/streamstats-api/streamstatsservices/watershed.geojson${params}`;
   } else {
-    // In production, use the allorigins.win CORS proxy.
-    fetchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
+    // In production, use the bridged.cc CORS proxy which takes the URL as a path.
+    fetchUrl = `https://cors.bridged.cc/${directUrl}`;
   }
 
   const res = await fetch(fetchUrl, {
     method: "GET",
     headers: {
+      // These headers are important for this specific proxy to work correctly.
       Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
+      Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
+      "X-Requested-With": "fetch"
     }
   });
 
@@ -100,24 +105,17 @@ function truncate(s: string, n: number) {
 }
 
 /* ===========================
-   Area helper (m²) — no deps
+   Area helper (m²)
    =========================== */
 
-/**
- * Compute total area (m²) of Polygon/MultiPolygon features in a GeoJSON FeatureCollection.
- * Uses Web Mercator projection (sufficient accuracy for watershed sizing & UI).
- */
 export function computeAreaSqMeters(fc: WatershedGeoJSON): number {
   let total = 0;
-
   for (const feat of fc.features ?? []) {
     if (!feat || !feat.geometry) continue;
-
     if (feat.geometry.type === "Polygon") {
       total += polygonAreaMeters(feat.geometry.coordinates as GeoJSON.Position[][]);
     } else if (feat.geometry.type === "MultiPolygon") {
-      const polys = feat.geometry.coordinates as GeoJSON.Position[][][];
-      for (const poly of polys) {
+      for (const poly of feat.geometry.coordinates as GeoJSON.Position[][][]) {
         total += polygonAreaMeters(poly);
       }
     }
@@ -127,7 +125,6 @@ export function computeAreaSqMeters(fc: WatershedGeoJSON): number {
 
 function polygonAreaMeters(rings: GeoJSON.Position[][]): number {
   if (!rings || rings.length === 0) return 0;
-
   let area = ringAreaMeters(rings[0]);
   for (let i = 1; i < rings.length; i++) {
     area -= ringAreaMeters(rings[i]);
