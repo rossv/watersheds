@@ -1,7 +1,6 @@
-
 /**
- * StreamStats client — updated to use the bridged CORS proxy with required headers
- * and modern API parameters for better reliability.
+ * StreamStats client — updated to use a more reliable public CORS proxy
+ * for production environments to avoid rate-limiting issues.
  */
 
 export type WatershedGeoJSON = GeoJSON.FeatureCollection<GeoJSON.Geometry>;
@@ -20,6 +19,7 @@ const STREAMSTATS_BASE =
 
 function isDev() {
   try {
+    // Vite defines this for development environments
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return !!(import.meta as any)?.env?.DEV;
   } catch {
@@ -27,9 +27,6 @@ function isDev() {
   }
 }
 
-/**
- * Builds the direct URL for the StreamStats API with modern parameters.
- */
 function buildWatershedUrl({
   lat,
   lon,
@@ -58,21 +55,18 @@ export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON>
   let fetchUrl: string;
 
   if (isDev()) {
-    // In development, construct a relative path for the Vite proxy.
+    // In development, use the local Vite proxy.
     const params = new URL(directUrl).search;
     fetchUrl = `/streamstats-api/streamstatsservices/watershed.geojson${params}`;
   } else {
-    // In production, use the bridged.cc CORS proxy which takes the URL as a path.
-    fetchUrl = `https://cors.bridged.cc/${directUrl}`;
+    // In production, use a different, more reliable CORS proxy.
+    fetchUrl = `https://thingproxy.freeboard.io/fetch/${directUrl}`;
   }
 
   const res = await fetch(fetchUrl, {
     method: "GET",
     headers: {
-      // These headers are important for this specific proxy to work correctly.
       Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
-      Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
-      "X-Requested-With": "fetch"
     }
   });
 
