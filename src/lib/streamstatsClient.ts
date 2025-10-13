@@ -1,159 +1,114 @@
 /**
- * Updated StreamStats client for watershed delineation.
- *
- * StreamStats deprecated the old `x`/`y` parameter endpoints after December 2024.
- * The new API expects `xlocation` and `ylocation` parameters and optionally
- * a two‑letter state or regional `rcode`.  To remain backwards compatible
- * with GitHub Pages deployments, this client automatically wraps requests
- * through a CORS proxy when running in production.  A native fetch is used
- * during development via the Vite proxy defined in `vite.config.ts`.
- *
- * See the USGS StreamStats documentation for details:
- * https://streamstats.usgs.gov/docs/streamstatsservices/#/ (Delineate Watershed).
+ * StreamStats client — fixed CORS proxy + new API params.
+ * - Uses xlocation/ylocation (new API)
+ * - Wraps production requests via https://cors.bridged.cc/
+ * - Sends Accept + Origin headers so the proxy is happy
  */
 
-export interface WatershedGeoJSON {
-  type: 'FeatureCollection';
-  features: Array<{
-    type: 'Feature';
-    geometry: {
-      type: 'Polygon' | 'MultiPolygon';
-      coordinates: number[][][] | number[][][][];
-    };
-    properties: Record<string, any>;
-  }>;
-}
+export type WatershedGeoJSON = GeoJSON.FeatureCollection;
 
-/**
- * Encode a URL so that it can be safely appended as a query to the CORS proxy.
- */
-function encodeForProxy(url: string): string {
-  return encodeURIComponent(url);
-}
+type FetchOpts = {
+  lat: number;     // +N
+  lon: number;     // +E (negative for W)
+  rcode?: string;  // optional 2–3 char state/region code, e.g. "PA"
+  includeParameters?: boolean;   // default true
+  includeFeatures?: boolean;     // default true
+  simplify?: boolean;            // default true
+};
 
-/**
- * Build the StreamStats watershed URL using the new `xlocation`/`ylocation`
- * parameters.  A state/region code (`rcode`) may be provided but is not
- * mandatory; when omitted StreamStats will attempt to infer the study area.
- */
-function buildWatershedUrl(lat: number, lon: number, rcode?: string): string {
-  const params = new URLSearchParams();
-  if (rcode) {
-    params.set('rcode', rcode);
-  }
-  params.set('xlocation', lon.toString());
-  params.set('ylocation', lat.toString());
-  params.set('crs', '4326');
-  // GeoJSON response format; leaving off `includeparameters` yields only the
-  // geometry and basic metadata.  Additional options can be toggled here.
-  const base = 'https://streamstats.usgs.gov/streamstatsservices/watershed.geojson';
-  return `${base}?${params.toString()}`;
-}
+const STREAMSTATS_BASE =
+  "https://streamstats.usgs.gov/streamstatsservices/watershed.geojson";
 
-/**
- * Fetch a watershed boundary as GeoJSON.  The call uses a CORS proxy in
- * production to around cross‑origin restrictions on GitHub Pages.  A
- * development build will rely on the Vite proxy (see vite.config.ts) and
- * therefore return native CORS headers.
- *
- * If StreamStats returns a non‑OK response or an invalid GeoJSON object, an
- * error is thrown containing the HTTP status and any available response text.
- */
-export async function fetchWatershed(lat: number, lon: number, rcode?: string): Promise<WatershedGeoJSON> {
-  const url = buildWatershedUrl(lat, lon, rcode);
-  // When building for GitHub Pages import.meta.env.DEV is false, so wrap
-  // through the proxy.  The proxy service `api.allorigins.win/raw` fetches
-  // the remote resource and returns its body while setting permissive CORS
-  // headers.  Note that the target URL must be percent‑encoded when
-  // appended as a query parameter.
-  const proxied = import.meta.env.DEV
-    ? `/streamstats-api/streamstatsservices/watershed.geojson?${url.split('?')[1]}`
-    : `https://api.allorigins.win/raw?url=${encodeForProxy(url)}`;
-  console.log('Fetching watershed via:', proxied);
+// In dev (Vite), call target directly; in prod (GitHub Pages), go through proxy
+function isDev() {
   try {
-    const resp = await fetch(proxied, {
-      headers: {
-        Origin: window.location.origin
-      }
-    });
-    console.log('Watershed fetch status:', resp.status);
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`HTTP ${resp.status}: Failed to fetch watershed. Proxy responded with: ${text}`);
-    }
-    const text = await resp.text();
-    let data: any;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error(`Response was not valid JSON. Preview: ${text.slice(0, 200)}`);
-    }
-    if (isGeoJsonFeatureCollection(data)) {
-      return data;
-    }
-    throw new Error(`Response was not a valid GeoJSON FeatureCollection. Preview: ${text.slice(0, 200)}`);
-  } catch (error: any) {
-    console.error('Error during watershed fetch:', error);
-    throw error instanceof Error ? error : new Error(String(error));
+    // Vite defines this; if you're not on Vite, set VITE_DEV=true in .env.local
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return !!(import.meta as any)?.env?.DEV;
+  } catch {
+    return false;
   }
 }
 
-function isGeoJsonFeatureCollection(value: unknown): value is WatershedGeoJSON {
-  if (!value || typeof value !== 'object') return false;
-  const record = value as Record<string, unknown>;
-  if (record.type !== 'FeatureCollection') return false;
-  if (!Array.isArray(record.features)) return false;
-  return record.features.every((feat) => {
-    if (!feat || typeof feat !== 'object') return false;
-    const f = feat as Record<string, unknown>;
-    if (f.type !== 'Feature') return false;
-    const geom = f.geometry as Record<string, unknown> | undefined;
-    if (!geom || typeof geom !== 'object') return false;
-    const geomType = geom.type;
-    if (geomType !== 'Polygon' && geomType !== 'MultiPolygon') return false;
-    return Array.isArray(geom.coordinates);
-  });
+function proxify(url: string): string {
+  if (isDev()) return url;
+  // Cloudflare bridge requires Origin header (we send it below)
+  return `https://cors.bridged.cc/${url}`;
+}
+
+function buildWatershedUrl({
+  lat,
+  lon,
+  rcode,
+  includeParameters = true,
+  includeFeatures = true,
+  simplify = true
+}: FetchOpts): string {
+  const params = new URLSearchParams();
+  if (rcode) params.set("rcode", rcode); // optional; API will figure it out if omitted
+  params.set("xlocation", String(lon));
+  params.set("ylocation", String(lat));
+  params.set("crs", "4326");
+  params.set("includeparameters", includeParameters ? "true" : "false");
+  params.set("includefeatures", includeFeatures ? "true" : "false");
+  params.set("simplify", simplify ? "true" : "false");
+  return `${STREAMSTATS_BASE}?${params.toString()}`;
 }
 
 /**
- * Compute the spherical area (in square metres) of a GeoJSON feature
- * collection containing polygons or multipolygons.  Adapted from
- * OpenLayers/Turf.js to avoid pulling in heavy dependencies at runtime.
+ * Fetch a watershed GeoJSON for a lat/lon.
+ * Throws an Error with a friendly message if the server returns non-200.
  */
-export function computeAreaSqMeters(geojson: WatershedGeoJSON): number {
-  const R = 6378137; // WGS84 equatorial radius in metres
-  function ringArea(coords: number[][]): number {
-    let area = 0;
-    if (coords.length > 2) {
-      let [lon1, lat1] = coords[0];
-      lon1 = (lon1 * Math.PI) / 180;
-      lat1 = (lat1 * Math.PI) / 180;
-      for (let i = 1; i < coords.length; i++) {
-        let [lon2, lat2] = coords[i];
-        lon2 = (lon2 * Math.PI) / 180;
-        lat2 = (lat2 * Math.PI) / 180;
-        area += (lon2 - lon1) * (2 + Math.sin(lat1) + Math.sin(lat2));
-        lon1 = lon2;
-        lat1 = lat2;
-      }
-      area = (area * R * R) / 2;
+export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON> {
+  const direct = buildWatershedUrl(opts);
+  const url = proxify(direct);
+
+  const res = await fetch(url, {
+    method: "GET",
+    // The proxy wants an Origin header to mirror; use current site if present.
+    headers: {
+      Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
+      // Some proxies choke without this:
+      Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
+      "X-Requested-With": "fetch" // satisfies some proxy variants
     }
-    return area;
+  });
+
+  // If proxy sends HTML error page, this will catch it before JSON.parse explodes.
+  const contentType = res.headers.get("content-type") || "";
+
+  if (!res.ok) {
+    const preview = await safePreview(res);
+    throw new Error(
+      `StreamStats request failed (${res.status}) — ${preview}`
+    );
   }
-  let total = 0;
-  for (const feat of geojson.features) {
-    const { type, coordinates } = feat.geometry;
-    if (type === 'Polygon') {
-      const rings = coordinates as number[][][];
-      if (rings.length > 0) total += Math.abs(ringArea(rings[0]));
-      for (let i = 1; i < rings.length; i++) total -= Math.abs(ringArea(rings[i]));
-    } else if (type === 'MultiPolygon') {
-      const polys = coordinates as number[][][][];
-      for (const poly of polys) {
-        if (poly.length > 0) total += Math.abs(ringArea(poly[0]));
-        for (let i = 1; i < poly.length; i++) total -= Math.abs(ringArea(poly[i]));
-      }
+
+  if (!/json/i.test(contentType)) {
+    // Try to parse anyway (some servers forget the header)
+    try {
+      const data = (await res.json()) as WatershedGeoJSON;
+      return data;
+    } catch {
+      const preview = await safePreview(res);
+      throw new Error(
+        `Expected JSON/GeoJSON but got "${contentType || "unknown"}". Preview: ${preview}`
+      );
     }
   }
-  return total;
+
+  return (await res.json()) as WatershedGeoJSON;
+}
+
+async function safePreview(res: Response): Promise<string> {
+  try {
+    const txt = await res.text();
+    return truncate(txt.replace(/\s+/g, " "), 280);
+  } catch {
+    return "<no body>";
+  }
+}
+
+function truncate(s: string, n: number) {
+  return s.length <= n ? s : s.slice(0, n) + "…";
 }
