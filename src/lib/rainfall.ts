@@ -1,6 +1,7 @@
 /**
- * Rainfall utilities — fixed CORS proxy for NOAA/HDSC CSV/HTML endpoints.
- * Use this helper to fetch text/CSV through https://cors.bridged.cc/
+ * Rainfall utilities — CORS proxy fix + CSV parsing
+ * - Uses https://cors.bridged.cc/ in production (GitHub Pages)
+ * - Exports fetchRainfallCSV(url) and parseRainfallCSV(csv)
  */
 
 function isDev() {
@@ -18,7 +19,7 @@ function proxify(url: string): string {
 }
 
 /**
- * Fetches a text resource (CSV/HTML) with robust diagnostics.
+ * Low-level fetch that returns text (CSV/HTML) and plays nice with the proxy.
  */
 export async function fetchTextThroughProxy(url: string): Promise<string> {
   const target = proxify(url);
@@ -26,39 +27,73 @@ export async function fetchTextThroughProxy(url: string): Promise<string> {
   const res = await fetch(target, {
     method: "GET",
     headers: {
-      // Ask for text explicitly to avoid proxy “unsupported media type” surprises
+      // Ask for text explicitly; some proxies complain otherwise.
       Accept: "text/plain, text/csv, text/html;q=0.8, */*;q=0.5",
       Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
       "X-Requested-With": "fetch"
     }
   });
 
-  const contentType = res.headers.get("content-type") || "";
+  const ct = res.headers.get("content-type") || "";
 
   if (!res.ok) {
     const preview = await safePreview(res);
     throw new Error(`Rainfall fetch failed (${res.status}) — ${preview}`);
   }
 
-  // Most NOAA endpoints return text/csv or text/html; just pass it upstream.
-  if (!/text|csv|json/i.test(contentType)) {
-    // Still read the body and return it; caller decides how to parse.
-    const body = await res.text();
-    return body;
+  // NOAA endpoints usually return text, sometimes with odd content types.
+  if (!/text|csv|json/i.test(ct)) {
+    // Still try to read body; caller decides how to parse.
+    return await res.text();
   }
 
   return await res.text();
 }
 
-async function safePreview(res: Response): Promise<string> {
-  try {
-    const txt = await res.text();
-    return truncate(txt.replace(/\s+/g, " "), 280);
-  } catch {
-    return "<no body>";
-  }
+/**
+ * Convenience: fetch a NOAA/HDSC CSV by URL.
+ */
+export async function fetchRainfallCSV(url: string): Promise<string> {
+  return fetchTextThroughProxy(url);
 }
 
-function truncate(s: string, n: number) {
-  return s.length <= n ? s : s.slice(0, n) + "…";
+/**
+ * Parse CSV into headers + rows. Handles quotes and BOMs.
+ */
+export function parseRainfallCSV(csv: string): {
+  headers: string[];
+  rows: string[][];
+} {
+  // Normalize line endings, strip BOM
+  let s = csv ?? "";
+  if (s.charCodeAt(0) === 0xfeff) s = s.slice(1);
+  s = s.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+  const lines = s.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length === 0) return { headers: [], rows: [] };
+
+  const headers = parseCsvLine(lines[0]);
+  const rows: string[][] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const parsed = parseCsvLine(lines[i]);
+    // Pad/truncate to header length so consumers can index safely
+    if (parsed.length < headers.length) {
+      while (parsed.length < headers.length) parsed.push("");
+    } else if (parsed.length > headers.length) {
+      parsed.length = headers.length;
+    }
+    rows.push(parsed);
+  }
+
+  return { headers, rows };
 }
+
+/* ===========================
+   Helpers
+   =========================== */
+
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let i = 0;
