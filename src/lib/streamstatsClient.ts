@@ -32,8 +32,8 @@ function isDev() {
 
 function proxify(url: string): string {
   if (isDev()) return url;
-  // Cloudflare bridge requires Origin header (we send it below)
-  return `https://cors.bridged.cc/${url}`;
+  // Use the same proxy as designstorms-main for consistency
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
 function buildWatershedUrl({
