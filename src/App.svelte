@@ -35,6 +35,14 @@
   let lon: number = -79.9959;
   let cn: number = 70;
 
+  const COORD_DECIMALS = 6;
+  const COORD_FACTOR = 10 ** COORD_DECIMALS;
+
+  function roundCoord(value: number): number {
+    if (!Number.isFinite(value)) return value;
+    return Math.round(value * COORD_FACTOR) / COORD_FACTOR;
+  }
+
   // State variables
   let delineated: boolean = false;
   let watershed: WatershedGeoJSON | null = null;
@@ -194,17 +202,31 @@
     marker = L.marker([lat, lon], { draggable: true, icon: defaultMarkerIcon }).addTo(map);
     marker.on('dragend', () => {
       const ll = marker!.getLatLng();
-      lat = ll.lat;
-      lon = ll.lng;
+      lat = roundCoord(ll.lat);
+      lon = roundCoord(ll.lng);
     });
     map.on('click', (e: L.LeafletMouseEvent) => {
-      lat = e.latlng.lat;
-      lon = e.latlng.lng;
+      lat = roundCoord(e.latlng.lat);
+      lon = roundCoord(e.latlng.lng);
       if (marker) {
         marker.setLatLng([lat, lon]);
       }
     });
   });
+
+  $: if (Number.isFinite(lat)) {
+    const roundedLat = roundCoord(lat);
+    if (roundedLat !== lat) {
+      lat = roundedLat;
+    }
+  }
+
+  $: if (Number.isFinite(lon)) {
+    const roundedLon = roundCoord(lon);
+    if (roundedLon !== lon) {
+      lon = roundedLon;
+    }
+  }
 </script>
 
 <div class="app">
