@@ -72,47 +72,7 @@
     return value;
   }
 
-  async function delineate() {
-    error = '';
-    delineated = false;
-    rainfallTable = null;
-    rainfallDepth = 0;
-    rainfallIntensity = null;
-    selectedDuration = '';
-    selectedAri = '';
-    runoffDepth = runoffVolume = runoffCoeff = peakFlow = 0;
-    try {
-      // Corrected: Pass lat and lon inside an object
-      watershed = await fetchWatershed({ lat, lon });
-
-      const areaM2 = computeAreaSqMeters(watershed);
-      areaAc = areaM2 * 0.000247105;
-      delineated = true;
-      // Clear existing layer and add the new boundary
-      if (watershedLayer) {
-        watershedLayer.remove();
-        watershedLayer = null;
-      }
-      watershedLayer = L.geoJSON(watershed as any, {
-        style: {
-          color: '#33a02c',
-          weight: 2,
-          fillColor: '#b2df8a',
-          fillOpacity: 0.3
-        }
-      }).addTo(map);
-      // Fit bounds to the new watershed if possible
-      try {
-        const bounds = watershedLayer.getBounds();
-        if (bounds.isValid()) {
-          map.fitBounds(bounds.pad(0.1));
-        }
-      } catch {}
-    } catch (ex) {
-      error = (ex as Error).message;
-      console.error(ex);
-    }
-  }
+  
 
   async function fetchRainfall() {
     error = '';
