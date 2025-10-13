@@ -1,6 +1,6 @@
 /**
- * StreamStats client — updated to use a more reliable public CORS proxy
- * for production environments to avoid rate-limiting issues.
+ * StreamStats client — updated to align with the successful proxy strategy
+ * used in rainfall.ts, using api.allorigins.win with required headers.
  */
 
 export type WatershedGeoJSON = GeoJSON.FeatureCollection<GeoJSON.Geometry>;
@@ -59,14 +59,17 @@ export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON>
     const params = new URL(directUrl).search;
     fetchUrl = `/streamstats-api/streamstatsservices/watershed.geojson${params}`;
   } else {
-    // In production, use a different, more reliable CORS proxy.
-    fetchUrl = `https://thingproxy.freeboard.io/fetch/${directUrl}`;
+    // In production, use the api.allorigins.win proxy with the URL as a query parameter.
+    fetchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
   }
 
   const res = await fetch(fetchUrl, {
     method: "GET",
     headers: {
+      // These headers are included to match the working implementation in rainfall.ts
       Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
+      Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
+      "X-Requested-With": "fetch"
     }
   });
 
