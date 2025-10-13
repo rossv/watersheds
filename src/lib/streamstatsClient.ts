@@ -4,8 +4,7 @@
  * based on a latitude/longitude pair.  When running in development the
  * requests are routed through a local Vite proxy (see vite.config.ts) to
  * avoid CORS issues.  In production the client wraps the request through
- * https://api.allorigins.win/raw to work around CORS restrictions on
- * GitHub Pages.
+ * a public CORS proxy to work around CORS restrictions on GitHub Pages.
  */
 
 export interface WatershedGeoJSON {
@@ -40,12 +39,7 @@ export async function fetchWatershed(
   });
 
   const candidateRequests: Array<{ path: string; params: URLSearchParams }> = [
-    // Newer deployments of the StreamStats service expect an explicit format
-    // parameter.  Try this first so we get a true GeoJSON payload when
-    // supported.
     { path: 'watershed', params: new URLSearchParams({ ...Object.fromEntries(baseParams), format: 'geojson' }) },
-    // Fall back to the legacy .geojson endpoint which older deployments still
-    // support.  This mirrors the original behaviour of the client.
     { path: 'watershed.geojson', params: new URLSearchParams(baseParams) }
   ];
 
@@ -57,49 +51,45 @@ export async function fetchWatershed(
 
     const url = import.meta.env.DEV
       ? `/streamstats-api/streamstatsservices/${path}?${query}`
-      : `https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl)}`;
-
-    // The explicit 'Accept' header was causing the "media type unsupported" error.
-    // Removing it allows the request to succeed.
-    const resp = await fetch(url);
-
-    if (!resp.ok) {
-      lastError = `HTTP ${resp.status}: Failed to fetch watershed`;
-      continue;
-    }
-
-    const bodyText = await resp.text();
+      : `https://cors.sh/${baseUrl.replace('https://', '')}`;
+    
+    console.log('Attempting to fetch watershed from URL:', url);
 
     try {
-      const data = JSON.parse(bodyText);
-      if (isGeoJsonFeatureCollection(data)) {
-        return data;
-      }
+        const resp = await fetch(url, {
+            headers: {
+                'Origin': window.location.origin
+            }
+        });
+        
+        console.log('Fetch response status for watershed:', resp.status);
 
-      const preview = JSON.stringify(data);
-      if (preview.toLowerCase().includes('media type is unsupported')) {
-        lastError = preview.slice(0, 200);
-        continue;
-      }
+        if (!resp.ok) {
+          const errorText = await resp.text();
+          console.error('Fetch failed with status:', resp.status, 'Response:', errorText);
+          lastError = `HTTP ${resp.status}: Failed to fetch watershed. Proxy responded with: ${errorText}`;
+          continue;
+        }
 
-      lastError = preview.slice(0, 200);
-    } catch {
-      const preview = bodyText.trim().slice(0, 200);
-      lastError = preview || null;
+        const bodyText = await resp.text();
+        console.log("Successfully fetched raw watershed data:", bodyText);
 
-      if (preview.toLowerCase().includes('media type is unsupported')) {
-        continue;
-      }
+        const data = JSON.parse(bodyText);
+        if (isGeoJsonFeatureCollection(data)) {
+            return data;
+        }
+        lastError = `Response was not a valid GeoJSON FeatureCollection. Preview: ${bodyText.slice(0, 200)}`;
+    } catch (error) {
+        console.error('An error occurred during the watershed fetch operation:', error);
+        lastError = 'Failed to fetch the data. This might be due to a network issue or the CORS proxy being temporarily unavailable.';
     }
   }
 
   if (lastError) {
-    throw new Error(
-      `StreamStats returned an unexpected response: ${lastError}`
-    );
+    throw new Error(lastError);
   }
 
-  throw new Error('StreamStats returned an empty response.');
+  throw new Error('StreamStats returned an empty or invalid response for all request types.');
 }
 
 function isGeoJsonFeatureCollection(value: unknown): value is WatershedGeoJSON {
