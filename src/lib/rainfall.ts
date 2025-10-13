@@ -41,13 +41,17 @@ export async function fetchRainfallCSV(lat: number, lon: number): Promise<string
     url = `/noaa-api/fe_text_mean.csv?data=depth&lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}&series=pds&units=english`;
   } else {
     // Wrap via a reliable CORS proxy in production
-    url = `https://cors-anywhere.herokuapp.com/${noaaBase}`;
+    url = `https://cors.sh/${noaaBase.replace('https://', '')}`;
   }
   
   console.log('Attempting to fetch rainfall data from URL:', url);
 
   try {
-      const resp = await fetch(url);
+      const resp = await fetch(url, {
+          headers: {
+              'Origin': window.location.origin
+          }
+      });
 
       console.log('Fetch response status for rainfall data:', resp.status);
 
