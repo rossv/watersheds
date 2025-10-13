@@ -15,7 +15,7 @@ function isDev() {
 
 function proxify(url: string): string {
   if (isDev()) return url;
-  return `https://cors.bridged.cc/${url}`;
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
 /**
