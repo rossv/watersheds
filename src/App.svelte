@@ -82,7 +82,9 @@
     selectedAri = '';
     runoffDepth = runoffVolume = runoffCoeff = peakFlow = 0;
     try {
-      watershed = await fetchWatershed(lat, lon);
+      // Corrected: Pass lat and lon inside an object
+      watershed = await fetchWatershed({ lat, lon });
+
       const areaM2 = computeAreaSqMeters(watershed);
       areaAc = areaM2 * 0.000247105;
       delineated = true;
