@@ -51,12 +51,16 @@ export async function fetchWatershed(
 
     const url = import.meta.env.DEV
       ? `/streamstats-api/streamstatsservices/${path}?${query}`
-      : `https://cors-anywhere.herokuapp.com/${baseUrl}`;
-
+      : `https://cors.sh/${baseUrl.replace('https://', '')}`;
+    
     console.log('Attempting to fetch watershed from URL:', url);
 
     try {
-        const resp = await fetch(url);
+        const resp = await fetch(url, {
+            headers: {
+                'Origin': window.location.origin
+            }
+        });
         
         console.log('Fetch response status for watershed:', resp.status);
 
