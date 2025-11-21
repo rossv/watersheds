@@ -1,6 +1,6 @@
 /**
  * Rainfall utilities — CORS proxy fix + CSV parsing
- * - Uses https://cors.bridged.cc/ in production (GitHub Pages)
+ * - Uses https://api.allorigins.win/raw in production (GitHub Pages)
  * - Exports fetchRainfallCSV(url) and parseRainfallCSV(csv)
  */
 
