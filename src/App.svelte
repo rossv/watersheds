@@ -125,15 +125,15 @@
     try {
       const csv = await fetchRainfallCSV(lat, lon);
       const table = parseRainfallCSV(csv);
-      if (!table) {
+      if (!table || table.rows.length === 0 || table.aris.length === 0) {
         error = 'Failed to parse rainfall table.';
         return;
       }
       rainfallTable = table;
       durations = table.rows.map((r) => r.label);
       aris = table.aris;
-      selectedDuration = durations[0];
-      selectedAri = aris[0];
+      selectedDuration = durations[0] ?? '';
+      selectedAri = aris[0] ?? '';
       computeDepthAndIntensity();
     } catch (ex) {
       error = (ex as Error).message;

@@ -18,6 +18,11 @@ function proxify(url: string): string {
   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
+export interface RainfallTable {
+  aris: string[];
+  rows: { label: string; values: Record<string, number> }[];
+}
+
 /**
  * Low-level fetch that returns text (CSV/HTML) and plays nice with the proxy.
  */
@@ -50,97 +55,86 @@ export async function fetchTextThroughProxy(url: string): Promise<string> {
   return await res.text();
 }
 
+function buildRainfallUrl(lat: number, lon: number): string {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    throw new Error("Latitude and longitude must be finite numbers");
+  }
+
+  const params = new URLSearchParams({
+    lat: lat.toString(),
+    lon: lon.toString(),
+    data: "depth",
+    units: "english",
+    series: "pds"
+  });
+
+  return `https://hdsc.nws.noaa.gov/cgi-bin/hdsc/new/fe_text_read.p?${params.toString()}`;
+}
+
 /**
- * Convenience: fetch a NOAA/HDSC CSV by URL.
+ * Convenience: fetch a NOAA/HDSC CSV using latitude/longitude.
  */
-export async function fetchRainfallCSV(url: string): Promise<string> {
+export async function fetchRainfallCSV(lat: number, lon: number): Promise<string> {
+  const url = buildRainfallUrl(lat, lon);
   return fetchTextThroughProxy(url);
 }
 
 /**
- * Parse CSV into headers + rows. Handles quotes and BOMs.
+ * Parse a NOAA rainfall CSV into a structured RainfallTable.
  */
-export function parseRainfallCSV(csv: string): {
-  headers: string[];
-  rows: string[][];
-} {
+export function parseRainfallCSV(csv: string): RainfallTable | null {
   // Normalize line endings, strip BOM
   let s = csv ?? "";
   if (s.charCodeAt(0) === 0xfeff) s = s.slice(1);
   s = s.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-  const lines = s.split("\n").filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return { headers: [], rows: [] };
+  const lines = s
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
 
-  const headers = parseCsvLine(lines[0]);
-  const rows: string[][] = [];
+  if (lines.length === 0) return null;
 
-  for (let i = 1; i < lines.length; i++) {
-    const parsed = parseCsvLine(lines[i]);
-    // Pad/truncate to header length so consumers can index safely
-    if (parsed.length < headers.length) {
-      while (parsed.length < headers.length) parsed.push("");
-    } else if (parsed.length > headers.length) {
-      parsed.length = headers.length;
+  const headerIdx = lines.findIndex((line) => /\bARI\b/i.test(line));
+  if (headerIdx === -1) return null;
+
+  const headerLine = lines[headerIdx];
+  const ariSection = headerLine.slice(headerLine.toLowerCase().indexOf("ari"));
+  const aris = Array.from(ariSection.matchAll(/(\d+(?:\.\d+)?)/g)).map((m) => m[1]);
+  if (aris.length === 0) return null;
+
+  const rows: RainfallTable["rows"] = [];
+
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i];
+    const m = line.match(/^(?<label>[^:,]+?):\s*(?<values>.+)$/);
+    const label = m?.groups?.label?.trim();
+    const valuesPart = m?.groups?.values?.trim() ?? "";
+
+    if (!label || !isDurationLabel(label)) continue;
+
+    const tokens = valuesPart.split(/[\s,]+/).filter((t) => t.length > 0);
+    const values: Record<string, number> = {};
+    for (let j = 0; j < aris.length; j++) {
+      const token = tokens[j];
+      const num = token != null ? parseFloat(token) : NaN;
+      values[aris[j]] = Number.isFinite(num) ? num : NaN;
     }
-    rows.push(parsed);
+
+    rows.push({ label, values });
   }
 
-  return { headers, rows };
+  if (rows.length === 0) return null;
+
+  return { aris, rows };
 }
 
 /* ===========================
    Helpers
    =========================== */
 
-function parseCsvLine(line: string): string[] {
-  const out: string[] = [];
-  let cur = "";
-  let i = 0;
-  let inQuotes = false;
-
-  while (i < line.length) {
-    const ch = line[i];
-
-    if (inQuotes) {
-      if (ch === '"') {
-        const next = line[i + 1];
-        if (next === '"') {
-          // Escaped quote
-          cur += '"';
-          i += 2;
-          continue;
-        }
-
-        inQuotes = false;
-        i++;
-        continue;
-      }
-
-      cur += ch;
-      i++;
-      continue;
-    }
-
-    if (ch === ',') {
-      out.push(cur);
-      cur = "";
-      i++;
-      continue;
-    }
-
-    if (ch === '"') {
-      inQuotes = true;
-      i++;
-      continue;
-    }
-
-    cur += ch;
-    i++;
-  }
-
-  out.push(cur);
-  return out;
+function isDurationLabel(label: string): boolean {
+  return /(\d+(?:\.\d+)?)\s*(min|minute|minutes|hr|hour|hours|day|days)/i.test(label);
 }
 
 async function safePreview(res: Response): Promise<string> {
