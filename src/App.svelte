@@ -259,7 +259,7 @@
             discharge.
           </li>
           <li>
-            Export to SWMM to continue hydraulic modelling in your preferred workflow.
+            Export to SWMM to continue hydraulic modeling in your preferred workflow.
           </li>
         </ol>
       </section>
