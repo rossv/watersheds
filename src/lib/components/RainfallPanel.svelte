@@ -8,6 +8,7 @@
   export let selectedAri: string;
   export let rainfallDepth: number;
   export let rainfallIntensity: number | null;
+  export let isFetchingRainfall: boolean;
   export let onFetch: () => void;
   export let onSelectDuration: (duration: string) => void;
   export let onSelectAri: (ari: string) => void;
@@ -16,13 +17,35 @@
 <section class="card">
   <h2>Rainfall</h2>
   <p class="helper-text">Fetch NOAA Atlas 14 data near your location.</p>
-  <button class="secondary" on:click={onFetch}>Fetch rainfall table</button>
+  <button
+    class="secondary"
+    on:click={onFetch}
+    disabled={isFetchingRainfall}
+    aria-busy={isFetchingRainfall}
+  >
+    {#if isFetchingRainfall}
+      <span class="spinner" aria-hidden="true"></span>
+      Fetching rainfall…
+    {:else}
+      Fetch rainfall table
+    {/if}
+  </button>
+  <p class="status" aria-live="polite">
+    {#if isFetchingRainfall}
+      Status: Fetching rainfall…
+    {:else if rainfallTable}
+      Status: Ready
+    {:else}
+      Status: Ready to fetch
+    {/if}
+  </p>
   {#if rainfallTable}
     <div class="row">
       <label>
         Duration
         <select
           bind:value={selectedDuration}
+          disabled={isFetchingRainfall}
           on:change={(e) => onSelectDuration((e.currentTarget as HTMLSelectElement).value)}
         >
           {#each durations as d}
@@ -34,6 +57,7 @@
         ARI (years)
         <select
           bind:value={selectedAri}
+          disabled={isFetchingRainfall}
           on:change={(e) => onSelectAri((e.currentTarget as HTMLSelectElement).value)}
         >
           {#each aris as a}
@@ -52,3 +76,32 @@
     </div>
   {/if}
 </section>
+
+<style>
+  .spinner {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    border: 2px solid rgba(15, 23, 42, 0.25);
+    border-top-color: #0f172a;
+    display: inline-block;
+    margin-right: 0.5rem;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .status {
+    margin: 0.75rem 0 0.25rem;
+    color: #52606d;
+    font-size: 0.95rem;
+  }
+</style>
