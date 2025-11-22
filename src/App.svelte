@@ -1,242 +1,26 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as L from 'leaflet';
-  import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png';
-  import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
-  import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
-  import {
-    fetchWatershed,
-    computeAreaSqMeters,
-    type WatershedGeoJSON
-  } from './lib/streamstatsClient';
-  import {
-    fetchRainfallCSV,
-    parseRainfallCSV,
-    type RainfallTable
-  } from './lib/rainfall';
-  import {
-    computeRunoff,
-    computeRunoffDepthCN,
-    computeRunoffVolume,
-    computeRationalPeak
-  } from './lib/runoff';
-  import { saveSwmmInp, type SwmmSubcatchment } from './lib/export';
+  import AnalyticsSidebar from './lib/components/AnalyticsSidebar.svelte';
+  import ApiHealthIndicator from './lib/components/ApiHealthIndicator.svelte';
+  import LocationForm from './lib/components/LocationForm.svelte';
+  import MapPanel from './lib/components/MapPanel.svelte';
+  import RainfallPanel from './lib/components/RainfallPanel.svelte';
+  import RunoffPanel from './lib/components/RunoffPanel.svelte';
+  import SavedScenarios from './lib/components/SavedScenarios.svelte';
+  import StatusBanner from './lib/components/StatusBanner.svelte';
+  import { actions, appState } from './lib/store';
 
-  // References for DOM elements
-  let mapDiv: HTMLDivElement;
-
-  // Leaflet objects
-  let map: L.Map;
-  let marker: L.Marker | null = null;
-  let watershedLayer: L.GeoJSON | null = null;
-
-  // Input values
-  let lat: number = 40.4406;
-  let lon: number = -79.9959;
-  let cn: number = 70;
-
-  const COORD_DECIMALS = 6;
-  const COORD_FACTOR = 10 ** COORD_DECIMALS;
-
-  function roundCoord(value: number): number {
-    if (!Number.isFinite(value)) return value;
-    return Math.round(value * COORD_FACTOR) / COORD_FACTOR;
-  }
-
-  // State variables
-  let delineated: boolean = false;
-  let watershed: WatershedGeoJSON | null = null;
-  let areaAc: number = 0;
-  let rainfallTable: RainfallTable | null = null;
-  let durations: string[] = [];
-  let aris: string[] = [];
-  let selectedDuration: string = '';
-  let selectedAri: string = '';
-  let rainfallDepth: number = 0;
-  let rainfallIntensity: number | null = null;
-  let runoffDepth: number = 0;
-  let runoffVolume: number = 0;
-  let runoffCoeff: number = 0;
-  let peakFlow: number = 0;
-  let error: string = '';
-
-  /** Convert a duration label (e.g., "1 hr", "15 min", "2 day") into hours. */
-  function durationToHours(label: string): number {
-    const m = label.toLowerCase().match(/(\d+(?:\.\d+)?)[^\d]*(min|minute|minutes|hr|hour|hours|day|days)/);
-    if (!m) return 0;
-    const value = parseFloat(m[1]);
-    const unit = m[2];
-    if (unit.startsWith('min')) return value / 60;
-    if (unit.startsWith('hr')) return value;
-    if (unit.startsWith('day')) return value * 24;
-    return value;
-  }
-
-  async function delineate() {
-    error = '';
-    delineated = false;
-    rainfallTable = null;
-    rainfallDepth = 0;
-    rainfallIntensity = null;
-    selectedDuration = '';
-    selectedAri = '';
-    runoffDepth = runoffVolume = runoffCoeff = peakFlow = 0;
-    try {
-      // Corrected: Pass lat and lon inside an object
-      watershed = await fetchWatershed({ lat, lon });
-
-      const areaM2 = computeAreaSqMeters(watershed);
-      areaAc = areaM2 * 0.000247105;
-      delineated = true;
-      // Clear existing layer and add the new boundary
-      if (watershedLayer) {
-        watershedLayer.remove();
-        watershedLayer = null;
-      }
-      watershedLayer = L.geoJSON(watershed as any, {
-        style: {
-          color: '#33a02c',
-          weight: 2,
-          fillColor: '#b2df8a',
-          fillOpacity: 0.3
-        }
-      }).addTo(map);
-      // Fit bounds to the new watershed if possible
-      try {
-        const bounds = watershedLayer.getBounds();
-        if (bounds.isValid()) {
-          map.fitBounds(bounds.pad(0.1));
-        }
-      } catch {}
-    } catch (ex) {
-      error = (ex as Error).message;
-      console.error(ex);
-    }
-  }
-
-  async function fetchRainfall() {
-    error = '';
-    rainfallTable = null;
-    rainfallDepth = 0;
-    rainfallIntensity = null;
-    selectedDuration = '';
-    selectedAri = '';
-    runoffDepth = runoffVolume = runoffCoeff = peakFlow = 0;
-    try {
-      const csv = await fetchRainfallCSV(lat, lon);
-      const table = parseRainfallCSV(csv);
-      if (!table || table.rows.length === 0 || table.aris.length === 0) {
-        error = 'Failed to parse rainfall table.';
-        return;
-      }
-      rainfallTable = table;
-      durations = table.rows.map((r) => r.label);
-      aris = table.aris;
-      selectedDuration = durations[0] ?? '';
-      selectedAri = aris[0] ?? '';
-      computeDepthAndIntensity();
-    } catch (ex) {
-      error = (ex as Error).message;
-    }
-  }
-
-  function computeDepthAndIntensity() {
-    if (!rainfallTable) return;
-    const row = rainfallTable.rows.find((r) => r.label === selectedDuration);
-    if (!row) return;
-    const val = row.values[selectedAri];
-    rainfallDepth = Number.isFinite(val) ? val : 0;
-    const hours = durationToHours(selectedDuration);
-    rainfallIntensity = hours > 0 ? rainfallDepth / hours : null;
-    // Reset downstream calculations
-    runoffDepth = runoffVolume = runoffCoeff = peakFlow = 0;
-  }
-
-  function computeRunoffValues() {
-    if (!rainfallDepth || !areaAc) return;
-    // Compute runoff depth using CN
-    runoffDepth = computeRunoffDepthCN(rainfallDepth, cn);
-    runoffVolume = computeRunoffVolume(areaAc, runoffDepth);
-    runoffCoeff = rainfallDepth > 0 ? runoffDepth / rainfallDepth : 0;
-    // Compute peak discharge if intensity is available
-    if (rainfallIntensity != null) {
-      peakFlow = computeRationalPeak(rainfallIntensity, runoffCoeff, areaAc);
-    } else {
-      peakFlow = 0;
-    }
-  }
-
-  function exportSwmm() {
-    // Derive some rough parameters.  Width is estimated as 4×area/√perimeter.
-    const width = Math.sqrt(areaAc) * 100; // simple proxy for demonstration
-    const slope = 0.02;
-    // Approximate impervious percentage based on CN (very rough mapping)
-    let pctImperv = (cn - 30) / 70 * 100;
-    pctImperv = Math.min(99, Math.max(0, pctImperv));
-    const sub: SwmmSubcatchment = {
-      name: 'S1',
-      areaAc,
-      pctImperv,
-      width,
-      slope,
-      outlet: 'Out1'
-    };
-    saveSwmmInp(sub, 'watershed.inp');
-  }
-
-  const defaultMarkerIcon = L.icon({
-    iconRetinaUrl: markerIcon2xUrl,
-    iconUrl: markerIconUrl,
-    shadowUrl: markerShadowUrl,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    tooltipAnchor: [16, -28],
-    shadowSize: [41, 41]
-  });
-
-  // Initialise Leaflet map when component mounts
   onMount(() => {
-    map = L.map(mapDiv).setView([lat, lon], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-    marker = L.marker([lat, lon], { draggable: true, icon: defaultMarkerIcon }).addTo(map);
-    marker.on('dragend', () => {
-      const ll = marker!.getLatLng();
-      lat = roundCoord(ll.lat);
-      lon = roundCoord(ll.lng);
-    });
-    map.on('click', (e: L.LeafletMouseEvent) => {
-      lat = roundCoord(e.latlng.lat);
-      lon = roundCoord(e.latlng.lng);
-      if (marker) {
-        marker.setLatLng([lat, lon]);
-      }
-    });
+    actions.checkApiHealth();
   });
-
-  $: if (Number.isFinite(lat)) {
-    const roundedLat = roundCoord(lat);
-    if (roundedLat !== lat) {
-      lat = roundedLat;
-    }
-  }
-
-  $: if (Number.isFinite(lon)) {
-    const roundedLon = roundCoord(lon);
-    if (roundedLon !== lon) {
-      lon = roundedLon;
-    }
-  }
 </script>
 
 <div class="app">
   <header class="hero">
     <h1>Watershed Response Explorer</h1>
     <p>
-      Pick a location, delineate its watershed, and evaluate rainfall-driven runoff in just a few
-      taps. Follow the guided steps below for the best experience on any device.
+      Pick a location, delineate its watershed, and evaluate rainfall-driven runoff in just a few taps. Follow
+      the guided steps below for the best experience on any device.
     </p>
   </header>
 
@@ -246,134 +30,82 @@
         <h2>How to get started</h2>
         <ol>
           <li><strong>Pan or tap</strong> on the map to drop the location marker.</li>
+          <li>Enter precise latitude and longitude if you need accuracy, then choose <em>Delineate</em>.</li>
           <li>
-            Enter precise latitude and longitude if you need accuracy, then choose
-            <em>Delineate</em>.
+            After the boundary appears, fetch design storm depths and select the duration/ARI pair that matches your
+            scenario.
           </li>
-          <li>
-            After the boundary appears, fetch design storm depths and select the duration/ARI pair
-            that matches your scenario.
-          </li>
-          <li>
-            Adjust the curve number (CN) and compute runoff to review depths, volumes, and peak
-            discharge.
-          </li>
-          <li>
-            Export to SWMM to continue hydraulic modeling in your preferred workflow.
-          </li>
+          <li>Adjust the curve number (CN) and compute runoff to review depths, volumes, and peak discharge.</li>
+          <li>Export to SWMM to continue hydraulic modeling in your preferred workflow.</li>
         </ol>
       </section>
+
       <section class="card tips">
         <h3>UX tips</h3>
         <ul>
           <li>Use two fingers to zoom the map on mobile.</li>
           <li>The marker is draggable—press and hold before moving it.</li>
-          <li>
-            Rainfall tables occasionally take a few seconds to download. Stay on the screen until
-            options appear.
-          </li>
+          <li>Rainfall tables occasionally take a few seconds to download. Stay on the screen until options appear.</li>
           <li>Calculated results update each time you change rainfall or CN inputs.</li>
         </ul>
       </section>
+
+      <ApiHealthIndicator status={$appState.apiHealth} onRefresh={actions.checkApiHealth} />
+      <SavedScenarios scenarios={$appState.savedScenarios} />
+      <AnalyticsSidebar />
     </aside>
 
     <main class="workflow" aria-label="Watershed configuration">
-      <section class="card">
-        <h2>Location</h2>
-        <p class="helper-text">Tap the map or type coordinates below.</p>
-        <div class="row">
-          <label>
-            Latitude
-            <input type="number" bind:value={lat} step="0.0001" />
-          </label>
-          <label>
-            Longitude
-            <input type="number" bind:value={lon} step="0.0001" />
-          </label>
-        </div>
-        <button class="primary" on:click={delineate}>Delineate watershed</button>
-        {#if delineated}
-          <p class="status">Boundary ready: {areaAc.toFixed(2)} acres</p>
-        {/if}
-      </section>
+      <LocationForm
+        lat={$appState.lat}
+        lon={$appState.lon}
+        delineated={$appState.delineated}
+        areaAc={$appState.areaAc}
+        onLatChange={actions.setLat}
+        onLonChange={actions.setLon}
+        onDelineate={actions.delineate}
+      />
 
-      {#if delineated}
-        <section class="card">
-          <h2>Rainfall</h2>
-          <p class="helper-text">Fetch NOAA Atlas 14 data near your location.</p>
-          <button class="secondary" on:click={fetchRainfall}>Fetch rainfall table</button>
-          {#if rainfallTable}
-            <div class="row">
-              <label>
-                Duration
-                <select bind:value={selectedDuration} on:change={computeDepthAndIntensity}>
-                  {#each durations as d}
-                    <option value={d}>{d}</option>
-                  {/each}
-                </select>
-              </label>
-              <label>
-                ARI (years)
-                <select bind:value={selectedAri} on:change={computeDepthAndIntensity}>
-                  {#each aris as a}
-                    <option value={a}>{a}</option>
-                  {/each}
-                </select>
-              </label>
-            </div>
-            <button class="secondary" on:click={computeDepthAndIntensity}>Update rainfall</button>
-          {/if}
-          {#if rainfallDepth > 0}
-            <div class="summary">
-              <span>Depth: {rainfallDepth.toFixed(2)} in</span>
-              {#if rainfallIntensity != null}
-                <span>Intensity: {rainfallIntensity.toFixed(2)} in/hr</span>
-              {/if}
-            </div>
-          {/if}
-        </section>
+      {#if $appState.delineated}
+        <RainfallPanel
+          rainfallTable={$appState.rainfallTable}
+          durations={$appState.durations}
+          aris={$appState.aris}
+          selectedDuration={$appState.selectedDuration}
+          selectedAri={$appState.selectedAri}
+          rainfallDepth={$appState.rainfallDepth}
+          rainfallIntensity={$appState.rainfallIntensity}
+          onFetch={actions.fetchRainfall}
+          onSelectDuration={actions.selectDuration}
+          onSelectAri={actions.selectAri}
+        />
       {/if}
 
-      {#if rainfallDepth > 0}
-        <section class="card">
-          <h2>Runoff</h2>
-          <p class="helper-text">Curve Number defaults to mixed suburban land use.</p>
-          <div class="row">
-            <label>
-              Curve Number (30–100)
-              <input type="number" min="30" max="100" bind:value={cn} step="1" />
-            </label>
-          </div>
-          <button class="primary" on:click={computeRunoffValues}>Compute runoff</button>
-          {#if runoffDepth > 0}
-            <div class="summary">
-              <span>Runoff depth: {runoffDepth.toFixed(2)} in</span>
-              <span>Volume: {runoffVolume.toFixed(2)} acre‑ft</span>
-              <span>Coeff: {runoffCoeff.toFixed(2)}</span>
-              {#if peakFlow > 0}
-                <span>Peak flow: {peakFlow.toFixed(2)} cfs</span>
-              {/if}
-            </div>
-            <button class="secondary" on:click={exportSwmm}>Export SWMM file</button>
-          {/if}
-        </section>
+      {#if $appState.rainfallDepth > 0}
+        <RunoffPanel
+          cn={$appState.cn}
+          runoffDepth={$appState.runoffDepth}
+          runoffVolume={$appState.runoffVolume}
+          runoffCoeff={$appState.runoffCoeff}
+          peakFlow={$appState.peakFlow}
+          rainfallDepth={$appState.rainfallDepth}
+          onCurveChange={actions.updateCurveNumber}
+          onCompute={actions.computeRunoffValues}
+          onExport={actions.exportSwmm}
+          onSaveScenario={actions.addScenario}
+        />
       {/if}
 
-      {#if error}
-        <section class="card error-card" role="alert">
-          <h2>Heads up</h2>
-          <p>{error}</p>
-        </section>
-      {/if}
+      <StatusBanner message={$appState.error} />
     </main>
 
-    <section class="map-panel" aria-label="Interactive map">
-      <div id="map" bind:this={mapDiv} role="application" aria-describedby="map-help"></div>
-      <p id="map-help" class="map-help">
-        Tap anywhere to move the marker, or drag the pin for fine adjustments. Map tiles courtesy of
-        OpenStreetMap.
-      </p>
-    </section>
+    <MapPanel
+      lat={$appState.lat}
+      lon={$appState.lon}
+      watershed={$appState.watershed}
+      delineated={$appState.delineated}
+      onLocationChange={actions.setLatLon}
+    />
   </div>
 </div>
 
@@ -418,8 +150,7 @@
   }
 
   .sidebar,
-  .workflow,
-  .map-panel {
+  .workflow {
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -542,22 +273,39 @@
     color: #d9480f;
   }
 
-  .map-panel {
-    flex: 1;
+  .future-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #1f2933;
   }
 
-  #map {
-    flex: 1;
-    min-height: 320px;
-    border-radius: 0.75rem;
-    overflow: hidden;
-    box-shadow: 0 18px 36px -24px rgba(15, 23, 42, 0.45);
+  .future-list li + li {
+    margin-top: 0.35rem;
   }
 
-  .map-help {
-    margin: 0.75rem 0 0;
+  .scenario-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .scenario-title {
+    font-weight: 700;
+  }
+
+  .scenario-meta {
     color: #52606d;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+  }
+
+  .runoff-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
   }
 
   @media (min-width: 960px) {
@@ -571,12 +319,7 @@
     }
 
     .workflow {
-      flex: 0 0 340px;
-    }
-
-    .map-panel {
-      flex: 1;
-      min-height: 520px;
+      flex: 0 0 360px;
     }
 
     .workflow .row {
