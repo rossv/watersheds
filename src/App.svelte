@@ -45,9 +45,11 @@
 
   // State variables
   let delineated: boolean = false;
+  let isDelineating: boolean = false;
   let watershed: WatershedGeoJSON | null = null;
   let areaAc: number = 0;
   let rainfallTable: RainfallTable | null = null;
+  let isFetchingRainfall: boolean = false;
   let durations: string[] = [];
   let aris: string[] = [];
   let selectedDuration: string = '';
@@ -73,7 +75,7 @@
   }
 
   async function delineate() {
-    error = '';
+    isDelineating = true;
     delineated = false;
     rainfallTable = null;
     rainfallDepth = 0;
@@ -83,7 +85,8 @@
     runoffDepth = runoffVolume = runoffCoeff = peakFlow = 0;
     try {
       // Corrected: Pass lat and lon inside an object
-      watershed = await fetchWatershed({ lat, lon });
+      const response = await fetchWatershed({ lat, lon });
+      watershed = response;
 
       const areaM2 = computeAreaSqMeters(watershed);
       areaAc = areaM2 * 0.000247105;
@@ -108,14 +111,17 @@
           map.fitBounds(bounds.pad(0.1));
         }
       } catch {}
+      error = '';
     } catch (ex) {
       error = (ex as Error).message;
       console.error(ex);
+    } finally {
+      isDelineating = false;
     }
   }
 
   async function fetchRainfall() {
-    error = '';
+    isFetchingRainfall = true;
     rainfallTable = null;
     rainfallDepth = 0;
     rainfallIntensity = null;
@@ -135,8 +141,11 @@
       selectedDuration = durations[0] ?? '';
       selectedAri = aris[0] ?? '';
       computeDepthAndIntensity();
+      error = '';
     } catch (ex) {
       error = (ex as Error).message;
+    } finally {
+      isFetchingRainfall = false;
     }
   }
 
@@ -291,22 +300,47 @@
             <input type="number" bind:value={lon} step="0.0001" />
           </label>
         </div>
-        <button class="primary" on:click={delineate}>Delineate watershed</button>
-        {#if delineated}
-          <p class="status">Boundary ready: {areaAc.toFixed(2)} acres</p>
-        {/if}
+        <button class="primary" on:click={delineate} disabled={isDelineating}>
+          {#if isDelineating}
+            <span class="spinner" aria-hidden="true"></span>
+            Delineating…
+          {:else}
+            Delineate watershed
+          {/if}
+        </button>
+        <p class="status" aria-live="polite">
+          {#if isDelineating}
+            <span class="spinner" aria-hidden="true"></span>
+            Fetching boundary…
+          {:else if delineated}
+            Ready: boundary area {areaAc.toFixed(2)} acres
+          {:else}
+            Ready: pick a point to begin
+          {/if}
+        </p>
       </section>
 
       {#if delineated}
         <section class="card">
           <h2>Rainfall</h2>
           <p class="helper-text">Fetch NOAA Atlas 14 data near your location.</p>
-          <button class="secondary" on:click={fetchRainfall}>Fetch rainfall table</button>
+          <button class="secondary" on:click={fetchRainfall} disabled={isFetchingRainfall}>
+            {#if isFetchingRainfall}
+              <span class="spinner" aria-hidden="true"></span>
+              Fetching rainfall…
+            {:else}
+              Fetch rainfall table
+            {/if}
+          </button>
           {#if rainfallTable}
             <div class="row">
               <label>
                 Duration
-                <select bind:value={selectedDuration} on:change={computeDepthAndIntensity}>
+                <select
+                  bind:value={selectedDuration}
+                  on:change={computeDepthAndIntensity}
+                  disabled={isFetchingRainfall}
+                >
                   {#each durations as d}
                     <option value={d}>{d}</option>
                   {/each}
@@ -314,14 +348,28 @@
               </label>
               <label>
                 ARI (years)
-                <select bind:value={selectedAri} on:change={computeDepthAndIntensity}>
+                <select
+                  bind:value={selectedAri}
+                  on:change={computeDepthAndIntensity}
+                  disabled={isFetchingRainfall}
+                >
                   {#each aris as a}
                     <option value={a}>{a}</option>
                   {/each}
                 </select>
               </label>
             </div>
-            <button class="secondary" on:click={computeDepthAndIntensity}>Update rainfall</button>
+            <button class="secondary" on:click={computeDepthAndIntensity} disabled={isFetchingRainfall}>
+              Update rainfall
+            </button>
+          {/if}
+          {#if isFetchingRainfall}
+            <p class="status">
+              <span class="spinner" aria-hidden="true"></span>
+              Fetching rainfall table…
+            </p>
+          {:else if rainfallTable}
+            <p class="status">Ready: rainfall table loaded</p>
           {/if}
           {#if rainfallDepth > 0}
             <div class="summary">
@@ -527,6 +575,21 @@
     color: #0f766e;
   }
 
+  .status .spinner {
+    margin-right: 0.35rem;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(15, 118, 110, 0.25);
+    border-top-color: #0f766e;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+  }
+
   .summary {
     display: grid;
     gap: 0.5rem;
@@ -594,6 +657,15 @@
 
     .summary {
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 </style>
