@@ -60,6 +60,7 @@
         lat={$appState.lat}
         lon={$appState.lon}
         delineated={$appState.delineated}
+        isDelineating={$appState.isDelineating}
         areaAc={$appState.areaAc}
         onLatChange={actions.setLat}
         onLonChange={actions.setLon}
@@ -75,6 +76,7 @@
           selectedAri={$appState.selectedAri}
           rainfallDepth={$appState.rainfallDepth}
           rainfallIntensity={$appState.rainfallIntensity}
+          isFetchingRainfall={$appState.isFetchingRainfall}
           onFetch={actions.fetchRainfall}
           onSelectDuration={actions.selectDuration}
           onSelectAri={actions.selectAri}

@@ -21,6 +21,7 @@ export type AppState = {
   lon: number;
   cn: number;
   delineated: boolean;
+  isDelineating: boolean;
   watershed: WatershedGeoJSON | null;
   areaAc: number;
   rainfallTable: RainfallTable | null;
@@ -35,6 +36,7 @@ export type AppState = {
   runoffCoeff: number;
   peakFlow: number;
   error: string;
+  isFetchingRainfall: boolean;
   apiHealth: ApiHealthStatus;
   savedScenarios: SavedScenario[];
 };
@@ -44,6 +46,7 @@ const initialState: AppState = {
   lon: -79.9959,
   cn: 70,
   delineated: false,
+  isDelineating: false,
   watershed: null,
   areaAc: 0,
   rainfallTable: null,
@@ -58,6 +61,7 @@ const initialState: AppState = {
   runoffCoeff: 0,
   peakFlow: 0,
   error: "",
+  isFetchingRainfall: false,
   apiHealth: "unknown",
   savedScenarios: []
 };
@@ -68,6 +72,8 @@ function resetCalculations(state: AppState): AppState {
   return {
     ...state,
     delineated: false,
+    isDelineating: false,
+    isFetchingRainfall: false,
     watershed: null,
     areaAc: 0,
     rainfallTable: null,
@@ -80,14 +86,14 @@ function resetCalculations(state: AppState): AppState {
     runoffDepth: 0,
     runoffVolume: 0,
     runoffCoeff: 0,
-    peakFlow: 0,
-    error: ""
+    peakFlow: 0
   };
 }
 
 function resetRainfall(state: AppState): AppState {
   return {
     ...state,
+    isFetchingRainfall: false,
     rainfallTable: null,
     durations: [],
     aris: [],
@@ -98,8 +104,7 @@ function resetRainfall(state: AppState): AppState {
     runoffDepth: 0,
     runoffVolume: 0,
     runoffCoeff: 0,
-    peakFlow: 0,
-    error: ""
+    peakFlow: 0
   };
 }
 
@@ -138,7 +143,7 @@ function durationToHours(label: string): number {
 }
 
 async function delineate() {
-  appState.update((s) => resetCalculations(s));
+  appState.update((s) => ({ ...resetCalculations(s), isDelineating: true }));
   try {
     const { lat, lon } = get(appState);
     const watershed = await fetchWatershed({ lat, lon });
@@ -149,22 +154,23 @@ async function delineate() {
       watershed,
       areaAc,
       delineated: true,
+      isDelineating: false,
       error: ""
     }));
   } catch (ex) {
     const message = (ex as Error).message;
-    appState.update((s) => ({ ...s, error: message }));
+    appState.update((s) => ({ ...s, isDelineating: false, error: message }));
   }
 }
 
 async function fetchRainfall() {
-  appState.update((s) => resetRainfall(s));
+  appState.update((s) => ({ ...resetRainfall(s), isFetchingRainfall: true }));
   try {
     const { lat, lon } = get(appState);
     const csv = await fetchRainfallCSV(lat, lon);
     const table = parseRainfallCSV(csv);
     if (!table || table.rows.length === 0 || table.aris.length === 0) {
-      appState.update((s) => ({ ...s, error: "Failed to parse rainfall table." }));
+      appState.update((s) => ({ ...s, isFetchingRainfall: false, error: "Failed to parse rainfall table." }));
       return;
     }
     appState.update((s) => {
@@ -177,13 +183,14 @@ async function fetchRainfall() {
         aris,
         selectedDuration: durations[0] ?? "",
         selectedAri: aris[0] ?? "",
-        error: ""
+        isFetchingRainfall: false,
+        error: "",
       };
       return selectDurationAndAri(nextState);
     });
   } catch (ex) {
     const message = (ex as Error).message;
-    appState.update((s) => ({ ...s, error: message }));
+    appState.update((s) => ({ ...s, isFetchingRainfall: false, error: message }));
   }
 }
 
