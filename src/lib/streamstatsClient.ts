@@ -3,6 +3,8 @@
  * used in rainfall.ts, using api.allorigins.win with required headers.
  */
 
+import { fetchWithProxy } from './http';
+
 export type WatershedGeoJSON = GeoJSON.FeatureCollection<GeoJSON.Geometry>;
 
 type FetchOpts = {
@@ -16,16 +18,6 @@ type FetchOpts = {
 
 const STREAMSTATS_BASE =
   "https://streamstats.usgs.gov/streamstatsservices/watershed.geojson";
-
-function isDev() {
-  try {
-    // Vite defines this for development environments
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return !!(import.meta as any)?.env?.DEV;
-  } catch {
-    return false;
-  }
-}
 
 function buildWatershedUrl({
   lat,
@@ -52,54 +44,80 @@ function buildWatershedUrl({
  */
 export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON> {
   const directUrl = buildWatershedUrl(opts);
-  let fetchUrl: string;
+  const params = new URL(directUrl).search;
+  const devProxyUrl = `/streamstats-api/streamstatsservices/watershed.geojson${params}`;
 
-  if (isDev()) {
-    // In development, use the local Vite proxy.
-    const params = new URL(directUrl).search;
-    fetchUrl = `/streamstats-api/streamstatsservices/watershed.geojson${params}`;
-  } else {
-    // In production, use the api.allorigins.win proxy with the URL as a query parameter.
-    fetchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
-  }
-
-  const res = await fetch(fetchUrl, {
-    method: "GET",
-    headers: {
-      // These headers are critical and match the working implementation in rainfall.ts
-      Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
-      Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
-      "X-Requested-With": "fetch"
+  const res = await fetchWithProxy(directUrl, {
+    devProxyUrl,
+    init: {
+      method: "GET",
+      headers: {
+        Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8"
+      }
     }
   });
 
-  if (!res.ok) {
-    const preview = await safePreview(res);
-    throw new Error(`StreamStats request failed (${res.status}) — ${preview}`);
+  const watershedJson = await parseWatershedResponse(res);
+
+  if (!isFeatureCollection(watershedJson)) {
+    throw new Error(
+      "Unexpected watershed response shape: expected a GeoJSON FeatureCollection with a features array."
+    );
   }
 
-  const textResponse = await res.text();
-  if (!textResponse) {
-      throw new Error("Failed to fetch watershed data: The CORS proxy returned an empty response. The StreamStats API may be temporarily unavailable or blocking the proxy.");
+  return watershedJson;
+}
+
+async function parseWatershedResponse(res: Response): Promise<unknown> {
+  const contentType = res.headers.get("content-type")?.toLowerCase() ?? "";
+
+  if (/json|geo\+json/.test(contentType)) {
+    const parsed = await res.json();
+    if (isAllOriginsEnvelope(parsed)) {
+      return parseAllOriginsContents(parsed.contents);
+    }
+    return parsed;
+  }
+
+  const text = await res.text();
+
+  try {
+    const parsed = JSON.parse(text);
+    if (isAllOriginsEnvelope(parsed)) {
+      return parseAllOriginsContents(parsed.contents);
+    }
+    return parsed;
+  } catch {
+    return parseAllOriginsContents(text);
+  }
+}
+
+function parseAllOriginsContents(contents: string): unknown {
+  if (!contents) {
+    throw new Error("Failed to fetch watershed data: Proxy returned an empty response.");
   }
 
   try {
-    const data = JSON.parse(textResponse);
-    return data as WatershedGeoJSON;
+    return JSON.parse(contents);
   } catch (e) {
+    const preview = contents.replace(/\s+/g, " ");
     throw new Error(
-      `Failed to parse JSON response. The server may be down or the CORS proxy may have failed. Preview: ${truncate(textResponse.replace(/\s+/g, " "), 280)}`
+      `Failed to parse AllOrigins-wrapped response as JSON. Preview: ${truncate(preview, 280)}`
     );
   }
 }
 
-async function safePreview(res: Response): Promise<string> {
-  try {
-    const txt = await res.text();
-    return truncate(txt.replace(/\s+/g, " "), 280);
-  } catch {
-    return "<no body>";
-  }
+function isAllOriginsEnvelope(value: unknown): value is { contents: string } {
+  return Boolean(value && typeof value === "object" && "contents" in value);
+}
+
+function isFeatureCollection(value: unknown): value is WatershedGeoJSON {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      (value as GeoJSON.FeatureCollection<GeoJSON.Geometry>).type === "FeatureCollection" &&
+      Array.isArray((value as GeoJSON.FeatureCollection<GeoJSON.Geometry>).features)
+  );
 }
 
 function truncate(s: string, n: number) {
