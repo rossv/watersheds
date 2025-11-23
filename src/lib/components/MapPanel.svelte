@@ -4,7 +4,7 @@
   import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png';
   import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
   import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
-  import type { WatershedGeoJSON } from '../services/streamstats';
+  import type { WatershedGeoJSON } from '../services/delineation';
 
   export let lat: number;
   export let lon: number;

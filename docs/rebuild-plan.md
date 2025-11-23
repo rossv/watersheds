@@ -66,8 +66,8 @@
 - Implement per-service timeouts (e.g., 8–10s) and cancellation via AbortController.
 
 ## Implementation Checklist
-- [ ] Add service clients (`nldi.ts`, `hydroshare.ts`, `elevation.ts`, `rainfall.ts`) with typed responses and timeouts.
-- [ ] Add geometry utilities and caching helper.
+- [x] Add service clients (`nldi.ts`, `hydroshare.ts`, `elevation.ts`, `rainfall.ts`) with typed responses and timeouts.
+- [x] Add geometry utilities and caching helper.
 - [ ] Build delineation worker for DEM-based fallback; wire to UI.
 - [ ] Update map stack to Maplibre with hydrography and terrain layers; maintain Leaflet fallback if necessary.
 - [ ] Implement watershed lookup flow with snap ➜ catchment ➜ fallback logic and local area calculation.
