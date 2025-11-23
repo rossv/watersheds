@@ -1,1 +1,2 @@
-export { computeAreaSqMeters, fetchWatershed, type WatershedGeoJSON } from "./services/streamstats";
+export { delineateBasin, type WatershedGeoJSON } from "./services/delineation";
+export { computeAreaSqMeters } from "./utils/geometry";

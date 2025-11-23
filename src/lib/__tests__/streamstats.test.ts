@@ -1,38 +1,17 @@
-import { describe, expect, it, vi } from 'vitest';
-import { fetchWatershed } from '../services/streamstats';
+import { describe, expect, it } from 'vitest';
+import { bufferPointSquare, computeAreaSqMeters } from '../utils/geometry';
 
-const htmlError = new Response('<html>Proxy error</html>', {
-  status: 502,
-  headers: { 'content-type': 'text/html' }
-});
+describe('geometry helpers', () => {
+  it('computes area for simple polygons and multipolygons', () => {
+    const square = bufferPointSquare(40, -80, 500);
+    const area = computeAreaSqMeters(square);
+    expect(area).toBeGreaterThan(0);
+    expect(area).toBeLessThan(5_000_000);
+  });
 
-const wrappedGeoJson = {
-  contents: JSON.stringify({
-    type: 'FeatureCollection',
-    features: 'not-an-array'
-  })
-};
-
-const wrappedResponse = new Response(JSON.stringify(wrappedGeoJson), {
-  status: 200,
-  headers: { 'content-type': 'application/json' }
-});
-
-describe('fetchWatershed', () => {
-  it('falls back when the dev proxy returns HTML and surfaces a helpful error', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(htmlError)
-      .mockResolvedValueOnce(wrappedResponse);
-
-    vi.stubGlobal('fetch', fetchMock);
-
-    await expect(fetchWatershed({ lat: 1, lon: 2 })).rejects.toThrow(
-      /features array/i
-    );
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-
-    vi.unstubAllGlobals();
+  it('ignores invalid geometries safely', () => {
+    const broken = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: null, properties: {} }] } as any;
+    const area = computeAreaSqMeters(broken);
+    expect(area).toBe(0);
   });
 });

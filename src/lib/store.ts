@@ -2,8 +2,10 @@ import { get, writable } from "svelte/store";
 import { saveSwmmInp, type SwmmSubcatchment } from "./export";
 import { computeRunoffDepthCN, computeRunoffVolume, computeRationalPeak } from "./runoff";
 import { fetchApiHealth, type ApiHealthStatus } from "./services/health";
-import { fetchRainfallCSV, parseRainfallCSV, type RainfallTable } from "./services/noaa";
-import { computeAreaSqMeters, fetchWatershed, type WatershedGeoJSON } from "./services/streamstats";
+import { delineateBasin, type WatershedGeoJSON } from "./services/delineation";
+import { fetchRainfall as fetchRainfallWithFallback } from "./services/rainfall";
+import type { RainfallTable } from "./rainfall";
+import { computeAreaSqMeters } from "./utils/geometry";
 
 export type SavedScenario = {
   id: string;
@@ -23,6 +25,7 @@ export type AppState = {
   delineated: boolean;
   isDelineating: boolean;
   watershed: WatershedGeoJSON | null;
+  delineationSource: string;
   areaAc: number;
   rainfallTable: RainfallTable | null;
   durations: string[];
@@ -31,6 +34,7 @@ export type AppState = {
   selectedAri: string;
   rainfallDepth: number;
   rainfallIntensity: number | null;
+  rainfallSource: string;
   runoffDepth: number;
   runoffVolume: number;
   runoffCoeff: number;
@@ -48,6 +52,7 @@ const initialState: AppState = {
   delineated: false,
   isDelineating: false,
   watershed: null,
+  delineationSource: "",
   areaAc: 0,
   rainfallTable: null,
   durations: [],
@@ -56,6 +61,7 @@ const initialState: AppState = {
   selectedAri: "",
   rainfallDepth: 0,
   rainfallIntensity: null,
+  rainfallSource: "",
   runoffDepth: 0,
   runoffVolume: 0,
   runoffCoeff: 0,
@@ -75,6 +81,7 @@ function resetCalculations(state: AppState): AppState {
     isDelineating: false,
     isFetchingRainfall: false,
     watershed: null,
+    delineationSource: "",
     areaAc: 0,
     rainfallTable: null,
     durations: [],
@@ -83,6 +90,7 @@ function resetCalculations(state: AppState): AppState {
     selectedAri: "",
     rainfallDepth: 0,
     rainfallIntensity: null,
+    rainfallSource: "",
     runoffDepth: 0,
     runoffVolume: 0,
     runoffCoeff: 0,
@@ -101,6 +109,7 @@ function resetRainfall(state: AppState): AppState {
     selectedAri: "",
     rainfallDepth: 0,
     rainfallIntensity: null,
+    rainfallSource: "",
     runoffDepth: 0,
     runoffVolume: 0,
     runoffCoeff: 0,
@@ -146,12 +155,13 @@ async function delineate() {
   appState.update((s) => ({ ...resetCalculations(s), isDelineating: true }));
   try {
     const { lat, lon } = get(appState);
-    const watershed = await fetchWatershed({ lat, lon });
-    const areaM2 = computeAreaSqMeters(watershed);
+    const result = await delineateBasin(lat, lon);
+    const areaM2 = computeAreaSqMeters(result.basin);
     const areaAc = areaM2 * 0.000247105;
     appState.update((s) => ({
       ...s,
-      watershed,
+      watershed: result.basin,
+      delineationSource: result.source,
       areaAc,
       delineated: true,
       isDelineating: false,
@@ -167,12 +177,7 @@ async function fetchRainfall() {
   appState.update((s) => ({ ...resetRainfall(s), isFetchingRainfall: true }));
   try {
     const { lat, lon } = get(appState);
-    const csv = await fetchRainfallCSV(lat, lon);
-    const table = parseRainfallCSV(csv);
-    if (!table || table.rows.length === 0 || table.aris.length === 0) {
-      appState.update((s) => ({ ...s, isFetchingRainfall: false, error: "Failed to parse rainfall table." }));
-      return;
-    }
+    const { table, source, stale } = await fetchRainfallWithFallback(lat, lon);
     appState.update((s) => {
       const durations = table.rows.map((r) => r.label);
       const aris = table.aris;
@@ -184,6 +189,7 @@ async function fetchRainfall() {
         selectedDuration: durations[0] ?? "",
         selectedAri: aris[0] ?? "",
         isFetchingRainfall: false,
+        rainfallSource: source + (stale ? " (stale)" : ""),
         error: "",
       };
       return selectDurationAndAri(nextState);
