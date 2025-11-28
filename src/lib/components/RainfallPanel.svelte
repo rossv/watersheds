@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RainfallTable } from '../services/noaa';
+  import type { RainfallTable } from "../services/noaa";
 
   export let rainfallTable: RainfallTable | null;
   export let durations: string[];
@@ -12,6 +12,16 @@
   export let onFetch: () => void;
   export let onSelectDuration: (duration: string) => void;
   export let onSelectAri: (ari: string) => void;
+
+  function handleDurationChange(e: Event) {
+    const value = (e.currentTarget as HTMLSelectElement).value;
+    onSelectDuration(value);
+  }
+
+  function handleAriChange(e: Event) {
+    const value = (e.currentTarget as HTMLSelectElement).value;
+    onSelectAri(value);
+  }
 </script>
 
 <section class="card">
@@ -46,7 +56,7 @@
         <select
           bind:value={selectedDuration}
           disabled={isFetchingRainfall}
-          on:change={(e) => onSelectDuration((e.currentTarget as HTMLSelectElement).value)}
+          on:change={handleDurationChange}
         >
           {#each durations as d}
             <option value={d}>{d}</option>
@@ -58,7 +68,7 @@
         <select
           bind:value={selectedAri}
           disabled={isFetchingRainfall}
-          on:change={(e) => onSelectAri((e.currentTarget as HTMLSelectElement).value)}
+          on:change={handleAriChange}
         >
           {#each aris as a}
             <option value={a}>{a}</option>

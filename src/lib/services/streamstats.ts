@@ -50,10 +50,9 @@ export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON>
     init: {
       method: "GET",
       headers: {
-        // These headers are critical and match the working implementation in rainfall.ts
-        Accept: "application/json, application/geo+json;q=0.9, */*;q=0.8",
-        Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
-        "X-Requested-With": "fetch"
+        // Simplified headers to avoid 415 Unsupported Media Type from IIS
+        Accept: "application/json, */*",
+        Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org"
       }
     }
   });
@@ -72,10 +71,17 @@ export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON>
   if (/application\/geo\+json/i.test(contentType)) {
     parsed = parseJson(body, "Failed to parse GeoJSON response");
   } else if (/json/i.test(contentType)) {
-    parsed = parseJson(body, "Failed to parse JSON response");
-    const maybeContents = (parsed as { contents?: unknown })?.contents;
-    if (typeof maybeContents === "string") {
-      parsed = parseJson(maybeContents, "Failed to parse StreamStats response from proxy");
+    // Try to parse as JSON directly first (in case of direct fetch)
+    try {
+      parsed = parseJson(body, "Failed to parse JSON response");
+    } catch {
+      // Fallback to proxy wrapped logic
+      const wrapped = parseJson(body, "Failed to parse proxy response");
+      const contents = (wrapped as { contents?: unknown })?.contents;
+      if (typeof contents !== "string") {
+        throw new Error("StreamStats proxy response was missing the expected contents string.");
+      }
+      parsed = parseJson(contents, "Failed to parse StreamStats response from proxy");
     }
   } else {
     const wrapped = parseJson(body, "Failed to parse proxy response");
@@ -84,6 +90,21 @@ export async function fetchWatershed(opts: FetchOpts): Promise<WatershedGeoJSON>
       throw new Error("StreamStats proxy response was missing the expected contents string.");
     }
     parsed = parseJson(contents, "Failed to parse StreamStats response from proxy");
+  }
+
+  // Handle StreamStats wrapped structure: { featurecollection: [ { name: "globalwatershed", feature: ... } ] }
+  const anyParsed = parsed as any;
+  if (anyParsed.featurecollection && Array.isArray(anyParsed.featurecollection)) {
+    const watershedItem = anyParsed.featurecollection.find((f: any) => f.name === "globalwatershed");
+    if (watershedItem && watershedItem.feature) {
+      parsed = watershedItem.feature;
+    } else {
+      // Fallback: try to find any feature collection if globalwatershed is missing
+      const anyFc = anyParsed.featurecollection.find((f: any) => f.feature && f.feature.type === 'FeatureCollection');
+      if (anyFc) {
+        parsed = anyFc.feature;
+      }
+    }
   }
 
   validateFeatureCollection(parsed);
@@ -159,4 +180,33 @@ function lonLatToWebMercator(lon: number, lat: number): [number, number] {
   const x = R * λ;
   const y = R * Math.log(Math.tan(Math.PI / 4 + φ / 2));
   return [x, y];
+}
+
+/**
+ * Fetch the state code (rcode) for a given lat/lon.
+ * Uses BigDataCloud's free reverse geocoding API.
+ */
+export async function fetchState(lat: number, lon: number): Promise<string | undefined> {
+  try {
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
+    const response = await fetchWithProxy({
+      url,
+      init: {
+        headers: {
+          "User-Agent": "WatershedResponseExplorer/1.0"
+        }
+      }
+    });
+    if (!response.ok) return undefined;
+    const data = await response.json();
+    // principalSubdivisionCode is usually "US-PA", "US-NY", etc.
+    const code = data.principalSubdivisionCode as string;
+    if (code && code.startsWith("US-")) {
+      return code.split("-")[1];
+    }
+    return undefined;
+  } catch (e) {
+    console.warn("Failed to fetch state code:", e);
+    return undefined;
+  }
 }

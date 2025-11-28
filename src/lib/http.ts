@@ -1,4 +1,4 @@
-const DEFAULT_TIMEOUT_MS = 10000;
+const DEFAULT_TIMEOUT_MS = 60000;
 const DEFAULT_RETRIES = 2;
 const DEFAULT_BACKOFF_MS = 300;
 
@@ -23,6 +23,11 @@ export async function fetchWithProxy({
   retries = DEFAULT_RETRIES,
   backoffMs = DEFAULT_BACKOFF_MS
 }: FetchWithProxyOptions): Promise<Response> {
+  // In Node.js (test) environment, fetch directly without proxy
+  if (typeof window === "undefined") {
+    return fetchWithTimeout(url, timeoutMs, init);
+  }
+
   let lastError: unknown;
 
   if (devProxyUrl) {

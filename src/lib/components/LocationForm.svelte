@@ -7,6 +7,16 @@
   export let onLatChange: (lat: number) => void;
   export let onLonChange: (lon: number) => void;
   export let onDelineate: () => void;
+
+  function handleLatChange(e: Event) {
+    const value = (e.currentTarget as HTMLInputElement).value;
+    onLatChange(parseFloat(value));
+  }
+
+  function handleLonChange(e: Event) {
+    const value = (e.currentTarget as HTMLInputElement).value;
+    onLonChange(parseFloat(value));
+  }
 </script>
 
 <section class="card">
@@ -19,7 +29,7 @@
         type="number"
         bind:value={lat}
         step="0.0001"
-        on:change={(e) => onLatChange(parseFloat((e.currentTarget as HTMLInputElement).value))}
+        on:change={handleLatChange}
       />
     </label>
     <label>
@@ -28,11 +38,16 @@
         type="number"
         bind:value={lon}
         step="0.0001"
-        on:change={(e) => onLonChange(parseFloat((e.currentTarget as HTMLInputElement).value))}
+        on:change={handleLonChange}
       />
     </label>
   </div>
-  <button class="primary" on:click={onDelineate} disabled={isDelineating} aria-busy={isDelineating}>
+  <button
+    class="primary"
+    on:click={onDelineate}
+    disabled={isDelineating}
+    aria-busy={isDelineating}
+  >
     {#if isDelineating}
       <span class="spinner" aria-hidden="true"></span>
       Fetching watershed…

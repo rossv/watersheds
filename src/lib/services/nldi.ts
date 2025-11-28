@@ -1,6 +1,6 @@
 import type { Feature, FeatureCollection, LineString, MultiPolygon, Point, Polygon } from "geojson";
 
-const NLDI_BASE = "https://labs.waterdata.usgs.gov/api/nldi/linked-data";
+const NLDI_BASE = "https://api.water.usgs.gov/nldi/linked-data";
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 export type FlowlineFeature = Feature<LineString, { comid: string; name?: string; source: string; reachcode?: string }>;
@@ -16,7 +16,10 @@ export async function snapToFlowline({
   lon: number;
   timeoutMs?: number;
 }): Promise<FlowlineFeature> {
-  const url = `${NLDI_BASE}/comid/position?lat=${lat}&lon=${lon}`;
+  const params = new URLSearchParams();
+  params.set("f", "json");
+  params.set("coords", `POINT(${lon} ${lat})`);
+  const url = `${NLDI_BASE}/comid/position?${params.toString()}`;
   const json = await fetchJson(url, "NLDI position", timeoutMs);
   const fc = ensureFeatureCollection(json, "flowline");
   const feature = fc.features?.[0] as Feature<LineString> | undefined;
@@ -41,7 +44,7 @@ export async function snapToFlowline({
 }
 
 export async function getCatchment(comid: string | number, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<CatchmentCollection | null> {
-  const url = `${NLDI_BASE}/comid/${comid}/basin`;
+  const url = `${NLDI_BASE}/comid/${comid}/basin?f=json`;
   try {
     const json = await fetchJson(url, "NLDI catchment", timeoutMs);
     const fc = ensureFeatureCollection(json, "catchment");
@@ -58,7 +61,7 @@ export async function getUpstreamFlowlines(
   distanceKm = 25,
   timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<FeatureCollection<LineString>> {
-  const url = `${NLDI_BASE}/comid/${comid}/navigate/UT/flowlines?distance=${distanceKm}`;
+  const url = `${NLDI_BASE}/comid/${comid}/navigate/UT/flowlines?distance=${distanceKm}&f=json`;
   const json = await fetchJson(url, "NLDI upstream flowlines", timeoutMs);
   const fc = ensureFeatureCollection(json, "upstream flowlines");
   return fc as FeatureCollection<LineString>;
@@ -102,7 +105,12 @@ async function fetchJson(url: string, label: string, timeoutMs: number) {
     const preview = await safePreview(res);
     throw new Error(`${label} request failed (${res.status}) — ${preview}`);
   }
-  return await res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(`${label} returned invalid JSON: ${truncate(text, 200)}`);
+  }
 }
 
 function extractComid(props: unknown): string | undefined {

@@ -6,6 +6,15 @@ import { delineateBasin, type WatershedGeoJSON } from "./services/delineation";
 import { fetchRainfall as fetchRainfallWithFallback } from "./services/rainfall";
 import type { RainfallTable } from "./rainfall";
 import { computeAreaSqMeters } from "./utils/geometry";
+import { type HSG, getCn } from "./cnTable";
+import { fetchLandUse } from "./services/landuse";
+
+export type LandUseItem = {
+  id: string;
+  categoryId: string;
+  hsg: HSG;
+  percentage: number;
+};
 
 export type SavedScenario = {
   id: string;
@@ -16,12 +25,14 @@ export type SavedScenario = {
   rainfallDepth: number;
   ari: string;
   duration: string;
+  landUseItems: LandUseItem[];
 };
 
 export type AppState = {
   lat: number;
   lon: number;
   cn: number;
+  landUseItems: LandUseItem[];
   delineated: boolean;
   isDelineating: boolean;
   watershed: WatershedGeoJSON | null;
@@ -41,6 +52,7 @@ export type AppState = {
   peakFlow: number;
   error: string;
   isFetchingRainfall: boolean;
+  isFetchingLandUse: boolean;
   apiHealth: ApiHealthStatus;
   savedScenarios: SavedScenario[];
 };
@@ -49,6 +61,7 @@ const initialState: AppState = {
   lat: 40.4406,
   lon: -79.9959,
   cn: 70,
+  landUseItems: [],
   delineated: false,
   isDelineating: false,
   watershed: null,
@@ -68,6 +81,7 @@ const initialState: AppState = {
   peakFlow: 0,
   error: "",
   isFetchingRainfall: false,
+  isFetchingLandUse: false,
   apiHealth: "unknown",
   savedScenarios: []
 };
@@ -224,6 +238,23 @@ function updateCurveNumber(cn: number) {
   appState.update((s) => ({ ...s, cn }));
 }
 
+function updateLandUseItems(items: LandUseItem[]) {
+  appState.update((s) => {
+    let totalPct = 0;
+    let weightedCn = 0;
+    for (const item of items) {
+      totalPct += item.percentage;
+      weightedCn += getCn(item.categoryId, item.hsg) * item.percentage;
+    }
+    const newCn = totalPct > 0 ? weightedCn / totalPct : 0;
+    // If total percentage is not 100, we might want to warn or handle it, 
+    // but for now we just normalize to the covered area or if empty, keep 0.
+    // Actually, if items are empty, we might want to keep the manual CN?
+    // Let's say if items are present, they override manual CN.
+    return { ...s, landUseItems: items, cn: items.length > 0 ? Math.round(newCn) : s.cn };
+  });
+}
+
 function setLat(lat: number) {
   if (!Number.isFinite(lat)) return;
   appState.update((s) => ({ ...s, lat }));
@@ -257,7 +288,8 @@ function exportSwmm() {
     pctImperv,
     width: Math.sqrt(state.areaAc) * 100,
     slope: 0.02,
-    outlet: "Out1"
+    outlet: "Out1",
+    cn: state.cn
   };
   saveSwmmInp(sub, "watershed.inp");
 }
@@ -273,7 +305,8 @@ function addScenario() {
       cn: s.cn,
       rainfallDepth: s.rainfallDepth,
       ari: s.selectedAri,
-      duration: s.selectedDuration
+      duration: s.selectedDuration,
+      landUseItems: s.landUseItems
     };
     return { ...s, savedScenarios: [scenario, ...s.savedScenarios] };
   });
@@ -285,6 +318,21 @@ async function checkApiHealth() {
   appState.update((s) => ({ ...s, apiHealth: status }));
 }
 
+async function fetchLandUseData() {
+  appState.update((s) => ({ ...s, isFetchingLandUse: true }));
+  try {
+    const { watershed } = get(appState);
+    if (!watershed) throw new Error("No watershed delineated");
+
+    const items = await fetchLandUse(watershed);
+    updateLandUseItems(items);
+    appState.update((s) => ({ ...s, isFetchingLandUse: false }));
+  } catch (ex) {
+    const message = (ex as Error).message;
+    appState.update((s) => ({ ...s, isFetchingLandUse: false, error: message }));
+  }
+}
+
 export const actions = {
   delineate,
   fetchRainfall,
@@ -292,10 +340,12 @@ export const actions = {
   selectDuration,
   selectAri,
   updateCurveNumber,
+  updateLandUseItems,
   setLat,
   setLon,
   setLatLon,
   exportSwmm,
   addScenario,
-  checkApiHealth
+  checkApiHealth,
+  fetchLandUseData
 };

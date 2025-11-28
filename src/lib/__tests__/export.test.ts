@@ -9,7 +9,8 @@ describe('formatSwmmInp', () => {
       pctImperv: 35.2,
       width: 400,
       slope: 0.015,
-      outlet: 'Out1'
+      outlet: 'Out1',
+      cn: 70
     };
 
     const txt = formatSwmmInp(sub);
@@ -25,5 +26,27 @@ describe('formatSwmmInp', () => {
     expect(outfallsIndex).toBeGreaterThan(-1);
     const outfallRow = lines[outfallsIndex + 2];
     expect(outfallRow).toBe(`${sub.outlet}\t0\tFREE\t\tNO\t`);
+
+    // Check OPTIONS
+    expect(txt).toContain('[OPTIONS]');
+    expect(txt).toContain('INFILTRATION\tCURVE_NUMBER');
+    expect(txt).toContain('FLOW_UNITS\tCFS');
+
+    // Check SUBAREAS
+    expect(txt).toContain('[SUBAREAS]');
+    const subareasIndex = lines.indexOf('[SUBAREAS]');
+    const subareasLine = lines[subareasIndex + 2]; // Skip header
+    expect(subareasLine).toBeDefined();
+    const parts = subareasLine.split(/\s+/);
+    // Expecting at least 7 parts (Sub, N-Imp, N-Perv, S-Imp, S-Perv, PctZero, RouteTo)
+    expect(parts.length).toBeGreaterThanOrEqual(7);
+    expect(parts[6]).toBe('OUTLET'); // RouteTo
+
+    // Check INFILTRATION
+    expect(txt).toContain('[INFILTRATION]');
+    const infiltrationIndex = lines.indexOf('[INFILTRATION]');
+    const infiltrationLine = lines[infiltrationIndex + 2]; // Skip header
+    expect(infiltrationLine).toBeDefined();
+    expect(infiltrationLine).toContain('70'); // CN
   });
 });

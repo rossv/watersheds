@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import AnalyticsSidebar from './lib/components/AnalyticsSidebar.svelte';
-  import ApiHealthIndicator from './lib/components/ApiHealthIndicator.svelte';
-  import LocationForm from './lib/components/LocationForm.svelte';
-  import MapPanel from './lib/components/MapPanel.svelte';
-  import RainfallPanel from './lib/components/RainfallPanel.svelte';
-  import RunoffPanel from './lib/components/RunoffPanel.svelte';
-  import SavedScenarios from './lib/components/SavedScenarios.svelte';
-  import StatusBanner from './lib/components/StatusBanner.svelte';
-  import { actions, appState } from './lib/store';
+  import { onMount } from "svelte";
+  import AnalyticsSidebar from "./lib/components/AnalyticsSidebar.svelte";
+  import ApiHealthIndicator from "./lib/components/ApiHealthIndicator.svelte";
+  import LocationForm from "./lib/components/LocationForm.svelte";
+  import MapPanel from "./lib/components/MapPanel.svelte";
+  import RainfallPanel from "./lib/components/RainfallPanel.svelte";
+  import RunoffPanel from "./lib/components/RunoffPanel.svelte";
+  import SavedScenarios from "./lib/components/SavedScenarios.svelte";
+  import StatusBanner from "./lib/components/StatusBanner.svelte";
+  import { actions, appState } from "./lib/store";
 
   onMount(() => {
     actions.checkApiHealth();
@@ -19,8 +19,9 @@
   <header class="hero">
     <h1>Watershed Response Explorer</h1>
     <p>
-      Pick a location, delineate its watershed, and evaluate rainfall-driven runoff in just a few taps. Follow
-      the guided steps below for the best experience on any device.
+      Pick a location, delineate its watershed, and evaluate rainfall-driven
+      runoff in just a few taps. Follow the guided steps below for the best
+      experience on any device.
     </p>
   </header>
 
@@ -29,14 +30,25 @@
       <section class="card">
         <h2>How to get started</h2>
         <ol>
-          <li><strong>Pan or tap</strong> on the map to drop the location marker.</li>
-          <li>Enter precise latitude and longitude if you need accuracy, then choose <em>Delineate</em>.</li>
           <li>
-            After the boundary appears, fetch design storm depths and select the duration/ARI pair that matches your
-            scenario.
+            <strong>Pan or tap</strong> on the map to drop the location marker.
           </li>
-          <li>Adjust the curve number (CN) and compute runoff to review depths, volumes, and peak discharge.</li>
-          <li>Export to SWMM to continue hydraulic modeling in your preferred workflow.</li>
+          <li>
+            Enter precise latitude and longitude if you need accuracy, then
+            choose <em>Delineate</em>.
+          </li>
+          <li>
+            After the boundary appears, fetch design storm depths and select the
+            duration/ARI pair that matches your scenario.
+          </li>
+          <li>
+            Adjust the curve number (CN) and compute runoff to review depths,
+            volumes, and peak discharge.
+          </li>
+          <li>
+            Export to SWMM to continue hydraulic modeling in your preferred
+            workflow.
+          </li>
         </ol>
       </section>
 
@@ -45,12 +57,21 @@
         <ul>
           <li>Use two fingers to zoom the map on mobile.</li>
           <li>The marker is draggable—press and hold before moving it.</li>
-          <li>Rainfall tables occasionally take a few seconds to download. Stay on the screen until options appear.</li>
-          <li>Calculated results update each time you change rainfall or CN inputs.</li>
+          <li>
+            Rainfall tables occasionally take a few seconds to download. Stay on
+            the screen until options appear.
+          </li>
+          <li>
+            Calculated results update each time you change rainfall or CN
+            inputs.
+          </li>
         </ul>
       </section>
 
-      <ApiHealthIndicator status={$appState.apiHealth} onRefresh={actions.checkApiHealth} />
+      <ApiHealthIndicator
+        status={$appState.apiHealth}
+        onRefresh={actions.checkApiHealth}
+      />
       <SavedScenarios scenarios={$appState.savedScenarios} />
       <AnalyticsSidebar />
     </aside>
@@ -86,19 +107,21 @@
       {#if $appState.rainfallDepth > 0}
         <RunoffPanel
           cn={$appState.cn}
+          landUseItems={$appState.landUseItems}
+          isFetchingLandUse={$appState.isFetchingLandUse}
           runoffDepth={$appState.runoffDepth}
           runoffVolume={$appState.runoffVolume}
           runoffCoeff={$appState.runoffCoeff}
           peakFlow={$appState.peakFlow}
           rainfallDepth={$appState.rainfallDepth}
           onCurveChange={actions.updateCurveNumber}
+          onLandUseChange={actions.updateLandUseItems}
+          onFetchLandUse={actions.fetchLandUseData}
           onCompute={actions.computeRunoffValues}
           onExport={actions.exportSwmm}
           onSaveScenario={actions.addScenario}
         />
       {/if}
-
-      <StatusBanner message={$appState.error} />
     </main>
 
     <MapPanel
@@ -114,7 +137,13 @@
 <style>
   :global(body) {
     margin: 0;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
     background: #f3f4f6;
     color: #1f2933;
   }
@@ -203,7 +232,7 @@
     font-weight: 500;
   }
 
-  input[type='number'],
+  input[type="number"],
   select {
     padding: 0.55rem 0.75rem;
     border-radius: 0.5rem;
@@ -220,7 +249,9 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 120ms ease, box-shadow 120ms ease;
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease;
   }
 
   button:focus-visible {

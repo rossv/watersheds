@@ -28,6 +28,11 @@ export default defineConfig(({ command }) => ({
         target: 'https://hdsc.nws.noaa.gov',
         changeOrigin: true,
         rewrite: (path: string) => path.replace(/^\/noaa-api/, '/cgi-bin/new')
+      },
+      '/mrlc-api': {
+        target: 'https://www.mrlc.gov',
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/mrlc-api/, '')
       }
     }
   },
