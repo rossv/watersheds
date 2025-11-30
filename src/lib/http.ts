@@ -44,7 +44,11 @@ export async function fetchWithProxy({
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetchWithTimeout(fallbackUrl, timeoutMs, init);
+      // Strip headers for the proxy request to avoid CORS preflight issues
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { headers, ...proxyInit } = init || {};
+
+      const response = await fetchWithTimeout(fallbackUrl, timeoutMs, proxyInit);
       if (response.ok) return response;
       lastError = await buildResponseError(response, "AllOrigins proxy");
     } catch (err) {

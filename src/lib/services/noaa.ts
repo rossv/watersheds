@@ -25,15 +25,21 @@ export interface RainfallTable {
  */
 export async function fetchTextThroughProxy(url: string): Promise<string> {
   const target = proxify(url);
+  const isProxy = target.includes('allorigins.win');
+
+  // Only add custom headers if NOT using the external proxy.
+  // The external proxy handles the request to the target, and adding headers here
+  // can cause CORS preflight failures or be rejected by the proxy.
+  const headers: HeadersInit = {};
+  if (!isProxy) {
+    headers['Accept'] = "text/plain, text/csv, text/html;q=0.8, */*;q=0.5";
+    headers['Origin'] = typeof window !== "undefined" ? window.location.origin : "https://example.org";
+    headers['X-Requested-With'] = "fetch";
+  }
 
   const res = await fetch(target, {
     method: "GET",
-    headers: {
-      // Ask for text explicitly; some proxies complain otherwise.
-      Accept: "text/plain, text/csv, text/html;q=0.8, */*;q=0.5",
-      Origin: typeof window !== "undefined" ? window.location.origin : "https://example.org",
-      "X-Requested-With": "fetch"
-    }
+    headers
   });
 
   const ct = res.headers.get("content-type") || "";
@@ -65,7 +71,8 @@ function buildRainfallUrl(lat: number, lon: number): string {
     series: "pds"
   });
 
-  return `https://hdsc.nws.noaa.gov/cgi-bin/hdsc/new/fe_text_read.p?${params.toString()}`;
+  // Updated URL based on investigation (fe_text_read.p returns 404)
+  return `https://hdsc.nws.noaa.gov/cgi-bin/new/fe_text_mean.csv?${params.toString()}`;
 }
 
 /**
@@ -92,13 +99,42 @@ export function parseRainfallCSV(csv: string): RainfallTable | null {
 
   if (lines.length === 0) return null;
 
-  const headerIdx = lines.findIndex((line) => /\bARI\b/i.test(line));
+  // Find header line. Usually contains "ARI" or "Average recurrence interval"
+  const headerIdx = lines.findIndex((line) =>
+    /\bARI\b/i.test(line) || /Average recurrence interval/i.test(line)
+  );
+
   if (headerIdx === -1) return null;
 
   const headerLine = lines[headerIdx];
-  const ariSection = headerLine.slice(headerLine.toLowerCase().indexOf("ari"));
-  const aris = Array.from(ariSection.matchAll(/(\d+(?:\.\d+)?)/g)).map((m) => m[1]);
-  if (aris.length === 0) return null;
+
+  // Robust parsing: 
+  // 1. Find the first valid data row to count the number of columns.
+  // 2. Extract ALL numbers from the header line.
+  // 3. Take the last N numbers from the header, where N is the number of data columns.
+
+  let dataColumnCount = 0;
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i];
+    const m = line.match(/^(?<label>[^:,]+?):\s*(?<values>.+)$/);
+    const label = m?.groups?.label?.trim();
+    const valuesPart = m?.groups?.values?.trim() ?? "";
+
+    if (label && isDurationLabel(label)) {
+      const tokens = valuesPart.split(/[\s,]+/).filter((t) => t.length > 0);
+      dataColumnCount = tokens.length;
+      break;
+    }
+  }
+
+  if (dataColumnCount === 0) return null;
+
+  // Extract all potential numbers from the header
+  const allHeaderNumbers = Array.from(headerLine.matchAll(/(\d+(?:\.\d+)?)/g)).map((m) => m[1]);
+
+  // Take the last N numbers
+  if (allHeaderNumbers.length < dataColumnCount) return null;
+  const aris = allHeaderNumbers.slice(-dataColumnCount);
 
   const rows: RainfallTable["rows"] = [];
 
@@ -112,7 +148,11 @@ export function parseRainfallCSV(csv: string): RainfallTable | null {
 
     const tokens = valuesPart.split(/[\s,]+/).filter((t) => t.length > 0);
     const values: Record<string, number> = {};
-    for (let j = 0; j < aris.length; j++) {
+
+    // Ensure we don't go out of bounds if a row has fewer values than expected (though unlikely if valid)
+    const loopCount = Math.min(aris.length, tokens.length);
+
+    for (let j = 0; j < loopCount; j++) {
       const token = tokens[j];
       const num = token != null ? parseFloat(token) : NaN;
       values[aris[j]] = Number.isFinite(num) ? num : NaN;
@@ -131,7 +171,7 @@ export function parseRainfallCSV(csv: string): RainfallTable | null {
    =========================== */
 
 function isDurationLabel(label: string): boolean {
-  return /(\d+(?:\.\d+)?)\s*(min|minute|minutes|hr|hour|hours|day|days)/i.test(label);
+  return /(\d+(?:\.\d+)?)\s*[-]?\s*(min|minute|minutes|hr|hour|hours|day|days)/i.test(label);
 }
 
 async function safePreview(res: Response): Promise<string> {
