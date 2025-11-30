@@ -133,7 +133,7 @@
 <style>
   .land-use-table {
     margin-top: 1rem;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--border-color);
     padding-top: 1rem;
   }
 
@@ -147,7 +147,7 @@
   .header h3 {
     margin: 0;
     font-size: 1rem;
-    color: #334155;
+    color: var(--text-primary);
   }
 
   .actions {
@@ -161,12 +161,12 @@
   }
 
   .empty-state {
-    color: #64748b;
+    color: var(--text-secondary);
     font-style: italic;
     font-size: 0.9rem;
     text-align: center;
     padding: 1rem;
-    background: #f8fafc;
+    background: var(--bg-hover);
     border-radius: 0.5rem;
   }
 
@@ -177,8 +177,8 @@
   }
 
   .row-card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     padding: 0.75rem;
   }
@@ -193,12 +193,16 @@
     flex: 1;
     font-size: 0.9rem;
     padding: 0.3rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
   }
 
   .icon-btn {
     background: none;
     border: none;
-    color: #94a3b8;
+    color: var(--text-tertiary);
     font-size: 1.25rem;
     line-height: 1;
     cursor: pointer;
@@ -206,7 +210,7 @@
   }
 
   .icon-btn:hover {
-    color: #ef4444;
+    color: var(--error-color);
   }
 
   .row-controls {
@@ -214,6 +218,7 @@
     align-items: center;
     gap: 1rem;
     font-size: 0.9rem;
+    color: var(--text-secondary);
   }
 
   .hsg-label {
@@ -224,6 +229,10 @@
 
   .hsg-label select {
     padding: 0.2rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
   }
 
   .pct-label {
@@ -238,26 +247,28 @@
   }
 
   .cn-badge {
-    background: #e2e8f0;
+    background: var(--bg-card);
     padding: 0.2rem 0.5rem;
     border-radius: 0.25rem;
     font-weight: 600;
     font-size: 0.85rem;
-    color: #475569;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
   }
 
   .footer {
     margin-top: 1rem;
     padding-top: 0.75rem;
-    border-top: 1px dashed #cbd5e1;
+    border-top: 1px dashed var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 0.95rem;
+    color: var(--text-primary);
   }
 
   .total-row.warning {
-    color: #d97706;
+    color: var(--warning-color);
   }
 
   .warning-text {

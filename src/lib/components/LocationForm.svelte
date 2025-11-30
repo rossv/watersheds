@@ -67,11 +67,27 @@
 </section>
 
 <style>
+  .row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .row label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
   .spinner {
     width: 1rem;
     height: 1rem;
     border-radius: 9999px;
-    border: 2px solid rgba(255, 255, 255, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-top-color: white;
     display: inline-block;
     margin-right: 0.5rem;
@@ -89,8 +105,9 @@
   }
 
   .status {
-    margin-top: 0.5rem;
-    color: #52606d;
-    font-size: 0.95rem;
+    margin-top: 0.75rem;
+    color: var(--success-color);
+    font-size: 0.9rem;
+    font-weight: 500;
   }
 </style>

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
-  import * as L from 'leaflet';
-  import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png';
-  import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
-  import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
-  import type { WatershedGeoJSON } from '../services/delineation';
+  import { onDestroy, onMount } from "svelte";
+  import * as L from "leaflet";
+  import markerIcon2xUrl from "leaflet/dist/images/marker-icon-2x.png";
+  import markerIconUrl from "leaflet/dist/images/marker-icon.png";
+  import markerShadowUrl from "leaflet/dist/images/marker-shadow.png";
+  import type { WatershedGeoJSON } from "../services/delineation";
 
   export let lat: number;
   export let lon: number;
@@ -16,6 +16,7 @@
   let map: L.Map;
   let marker: L.Marker | null = null;
   let watershedLayer: L.GeoJSON | null = null;
+  let wmsLayer: L.TileLayer.WMS | null = null;
 
   const COORD_DECIMALS = 6;
   const COORD_FACTOR = 10 ** COORD_DECIMALS;
@@ -28,7 +29,7 @@
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
     tooltipAnchor: [16, -28],
-    shadowSize: [41, 41]
+    shadowSize: [41, 41],
   });
 
   function roundCoord(value: number): number {
@@ -38,36 +39,61 @@
 
   function initializeMap() {
     map = L.map(mapDiv).setView([lat, lon], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
     }).addTo(map);
 
-    marker = L.marker([lat, lon], { draggable: true, icon: defaultMarkerIcon }).addTo(map);
-    marker.on('dragend', () => {
+    marker = L.marker([lat, lon], {
+      draggable: true,
+      icon: defaultMarkerIcon,
+    }).addTo(map);
+    marker.on("dragend", () => {
       const ll = marker!.getLatLng();
       onLocationChange(roundCoord(ll.lat), roundCoord(ll.lng));
     });
 
-    map.on('click', (e: L.LeafletMouseEvent) => {
+    map.on("click", (e: L.LeafletMouseEvent) => {
       onLocationChange(roundCoord(e.latlng.lat), roundCoord(e.latlng.lng));
     });
   }
 
   function refreshWatershedLayer() {
     if (!map) return;
+
+    // Clean up existing layers
     if (watershedLayer) {
       watershedLayer.remove();
       watershedLayer = null;
     }
+    if (wmsLayer) {
+      wmsLayer.remove();
+      wmsLayer = null;
+    }
+
     if (!watershed) return;
 
+    // Add NLCD WMS Layer first (so it's behind)
+    wmsLayer = L.tileLayer.wms(
+      "https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2021_Land_Cover_L48/wms",
+      {
+        layers: "NLCD_2021_Land_Cover_L48",
+        format: "image/png",
+        transparent: true,
+        opacity: 0.6,
+        attribution: "MRLC NLCD 2021",
+      },
+    );
+    wmsLayer.addTo(map);
+    wmsLayer.bringToBack();
+
+    // Add Watershed Layer
     watershedLayer = L.geoJSON(watershed as any, {
       style: {
-        color: '#33a02c',
+        color: "#33a02c",
         weight: 2,
-        fillColor: '#b2df8a',
-        fillOpacity: 0.3
-      }
+        fillColor: "#b2df8a",
+        fillOpacity: 0.3,
+      },
     }).addTo(map);
 
     try {
@@ -76,7 +102,7 @@
         map.fitBounds(bounds.pad(0.1));
       }
     } catch (err) {
-      console.warn('Failed to fit watershed bounds', err);
+      console.warn("Failed to fit watershed bounds", err);
     }
   }
 
@@ -88,9 +114,15 @@
 
   $: if (delineated) {
     refreshWatershedLayer();
-  } else if (watershedLayer) {
-    watershedLayer.remove();
-    watershedLayer = null;
+  } else {
+    if (watershedLayer) {
+      watershedLayer.remove();
+      watershedLayer = null;
+    }
+    if (wmsLayer) {
+      wmsLayer.remove();
+      wmsLayer = null;
+    }
   }
 
   onMount(() => {
@@ -106,10 +138,15 @@
 </script>
 
 <section class="map-panel" aria-label="Interactive map">
-  <div id="map" bind:this={mapDiv} role="application" aria-describedby="map-help"></div>
+  <div
+    id="map"
+    bind:this={mapDiv}
+    role="application"
+    aria-describedby="map-help"
+  ></div>
   <p id="map-help" class="map-help">
-    Tap anywhere to move the marker, or drag the pin for fine adjustments. Map tiles courtesy of
-    OpenStreetMap.
+    Tap anywhere to move the marker, or drag the pin for fine adjustments. Map
+    tiles courtesy of OpenStreetMap.
   </p>
 </section>
 

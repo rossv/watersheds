@@ -79,21 +79,86 @@
   {/if}
   {#if rainfallDepth > 0}
     <div class="summary">
-      <span>Depth: {rainfallDepth.toFixed(2)} in</span>
+      <div class="summary-box">
+        <span class="summary-label">Total Depth</span>
+        <div class="summary-value">
+          {rainfallDepth.toFixed(2)}<span class="unit">in</span>
+        </div>
+      </div>
       {#if rainfallIntensity != null}
-        <span>Intensity: {rainfallIntensity.toFixed(2)} in/hr</span>
+        <div class="summary-box">
+          <span class="summary-label">Intensity</span>
+          <div class="summary-value">
+            {rainfallIntensity.toFixed(2)}<span class="unit">in/hr</span>
+          </div>
+        </div>
       {/if}
     </div>
   {/if}
 </section>
 
 <style>
+  .row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .row label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .summary-box {
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .summary-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+  }
+
+  .summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .unit {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    margin-left: 0.1rem;
+  }
+
   .spinner {
     width: 1rem;
     height: 1rem;
     border-radius: 9999px;
     border: 2px solid rgba(15, 23, 42, 0.25);
-    border-top-color: #0f172a;
+    border-top-color: var(--text-primary);
     display: inline-block;
     margin-right: 0.5rem;
     animation: spin 0.8s linear infinite;
@@ -111,7 +176,8 @@
 
   .status {
     margin: 0.75rem 0 0.25rem;
-    color: #52606d;
-    font-size: 0.95rem;
+    color: var(--success-color);
+    font-size: 0.9rem;
+    font-weight: 500;
   }
 </style>
