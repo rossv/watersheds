@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import * as L from "leaflet";
+  import "leaflet/dist/leaflet.css";
   import markerIcon2xUrl from "leaflet/dist/images/marker-icon-2x.png";
   import markerIconUrl from "leaflet/dist/images/marker-icon.png";
   import markerShadowUrl from "leaflet/dist/images/marker-shadow.png";
@@ -16,7 +17,13 @@
   let map: L.Map;
   let marker: L.Marker | null = null;
   let watershedLayer: L.GeoJSON | null = null;
-  let wmsLayer: L.TileLayer.WMS | null = null;
+
+  // WMS Layers
+  let nlcdLayer: L.TileLayer.WMS | null = null;
+  let soilLayer: L.TileLayer.WMS | null = null;
+  let hydroLayer: L.TileLayer.WMS | null = null;
+
+  let activeLayer: "none" | "nlcd" | "soil" | "hydro" = "nlcd";
 
   const COORD_DECIMALS = 6;
   const COORD_FACTOR = 10 ** COORD_DECIMALS;
@@ -38,6 +45,9 @@
   }
 
   function initializeMap() {
+    if (map) return;
+    if (!mapDiv) return;
+
     map = L.map(mapDiv).setView([lat, lon], 12);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; OpenStreetMap contributors",
@@ -57,34 +67,70 @@
     });
   }
 
-  function refreshWatershedLayer() {
+  function updateWmsLayers() {
     if (!map) return;
 
-    // Clean up existing layers
-    if (watershedLayer) {
-      watershedLayer.remove();
-      watershedLayer = null;
+    // Remove all WMS layers first
+    if (nlcdLayer) {
+      nlcdLayer.remove();
+      nlcdLayer = null;
     }
-    if (wmsLayer) {
-      wmsLayer.remove();
-      wmsLayer = null;
+    if (soilLayer) {
+      soilLayer.remove();
+      soilLayer = null;
+    }
+    if (hydroLayer) {
+      hydroLayer.remove();
+      hydroLayer = null;
     }
 
     if (!watershed) return;
 
-    // Add NLCD WMS Layer first (so it's behind)
-    wmsLayer = L.tileLayer.wms(
-      "https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2021_Land_Cover_L48/wms",
-      {
-        layers: "NLCD_2021_Land_Cover_L48",
-        format: "image/png",
-        transparent: true,
-        opacity: 0.6,
-        attribution: "MRLC NLCD 2021",
-      },
-    );
-    wmsLayer.addTo(map);
-    wmsLayer.bringToBack();
+    if (activeLayer === "nlcd") {
+      nlcdLayer = L.tileLayer
+        .wms("https://www.mrlc.gov/geoserver/wms", {
+          layers: "mrlc_display:NLCD_2021_Land_Cover_L48",
+          format: "image/png",
+          transparent: true,
+          opacity: 0.6,
+          attribution: "MRLC NLCD 2021",
+        })
+        .addTo(map);
+    } else if (activeLayer === "soil") {
+      soilLayer = L.tileLayer
+        .wms("https://SDMDataAccess.sc.egov.usda.gov/Spatial/SDM.wms", {
+          layers: "MapunitPoly",
+          format: "image/png",
+          transparent: true,
+          opacity: 0.6,
+          attribution: "USDA Web Soil Survey",
+        })
+        .addTo(map);
+    } else if (activeLayer === "hydro") {
+      hydroLayer = L.tileLayer
+        .wms(
+          "https://hydro.nationalmap.gov/arcgis/services/nhd/MapServer/WMSServer",
+          {
+            layers: "0,1,2,3,4,5,6,7,8", // All Hydrography layers (Large/Small scale, Waterbodies, Flowlines, Areas)
+            format: "image/png",
+            transparent: true,
+            opacity: 0.6,
+            attribution: "USGS NHD",
+          },
+        )
+        .addTo(map);
+    }
+  }
+
+  function refreshWatershedLayer() {
+    if (!map) return;
+
+    if (watershedLayer) {
+      watershedLayer.remove();
+      watershedLayer = null;
+    }
+
+    if (!watershed) return;
 
     // Add Watershed Layer
     watershedLayer = L.geoJSON(watershed as any, {
@@ -104,6 +150,8 @@
     } catch (err) {
       console.warn("Failed to fit watershed bounds", err);
     }
+
+    updateWmsLayers();
   }
 
   $: if (map && marker && Number.isFinite(lat) && Number.isFinite(lon)) {
@@ -119,10 +167,12 @@
       watershedLayer.remove();
       watershedLayer = null;
     }
-    if (wmsLayer) {
-      wmsLayer.remove();
-      wmsLayer = null;
-    }
+    updateWmsLayers();
+  }
+
+  // React to activeLayer change
+  $: if (delineated && map && activeLayer) {
+    updateWmsLayers();
   }
 
   onMount(() => {
@@ -138,12 +188,32 @@
 </script>
 
 <section class="map-panel" aria-label="Interactive map">
-  <div
-    id="map"
-    bind:this={mapDiv}
-    role="application"
-    aria-describedby="map-help"
-  ></div>
+  <div class="map-container">
+    <div
+      id="map"
+      bind:this={mapDiv}
+      role="application"
+      aria-describedby="map-help"
+    ></div>
+
+    {#if delineated}
+      <div class="layer-control">
+        <label>
+          <input type="radio" bind:group={activeLayer} value="none" /> None
+        </label>
+        <label>
+          <input type="radio" bind:group={activeLayer} value="nlcd" /> Land Cover
+        </label>
+        <label>
+          <input type="radio" bind:group={activeLayer} value="soil" /> Soil
+        </label>
+        <label>
+          <input type="radio" bind:group={activeLayer} value="hydro" /> Hydro
+        </label>
+      </div>
+    {/if}
+  </div>
+
   <p id="map-help" class="map-help">
     Tap anywhere to move the marker, or drag the pin for fine adjustments. Map
     tiles courtesy of OpenStreetMap.
@@ -153,14 +223,47 @@
 <style>
   .map-panel {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .map-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
   }
 
   #map {
     flex: 1;
-    min-height: 320px;
     border-radius: 0.75rem;
     overflow: hidden;
     box-shadow: 0 18px 36px -24px rgba(15, 23, 42, 0.45);
+    z-index: 1;
+  }
+
+  .layer-control {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: white;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000; /* Above map */
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: #333; /* Ensure text is dark on white background */
+  }
+
+  .layer-control label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
   }
 
   .map-help {
@@ -170,7 +273,7 @@
   }
 
   @media (min-width: 960px) {
-    #map {
+    .map-container {
       min-height: 520px;
     }
   }
