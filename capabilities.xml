@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WMS_Capabilities version="1.3.0"
+  xmlns="http://www.opengis.net/wms"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:esri_wms="http://www.esri.com/wms"
+  xsi:schemaLocation="http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd http://www.esri.com/wms https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?version=1.3.0%26service=WMS%26request=GetSchemaExtension">
+  <Service>
+    <Name><![CDATA[WMS]]></Name>
+    <Title>WMS</Title>
+    <Abstract>WMS</Abstract>
+    <KeywordList><Keyword><![CDATA[]]></Keyword></KeywordList>
+    <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?"/>
+    <ContactInformation>
+      <ContactPersonPrimary>
+        <ContactPerson><![CDATA[]]></ContactPerson>
+        <ContactOrganization><![CDATA[]]></ContactOrganization>
+      </ContactPersonPrimary>
+      <ContactPosition><![CDATA[]]></ContactPosition>
+      <ContactAddress>
+        <AddressType><![CDATA[]]></AddressType>
+        <Address><![CDATA[]]></Address>
+        <City><![CDATA[]]></City>
+        <StateOrProvince><![CDATA[]]></StateOrProvince>
+        <PostCode><![CDATA[]]></PostCode>
+        <Country><![CDATA[]]></Country>
+      </ContactAddress>
+      <ContactVoiceTelephone><![CDATA[]]></ContactVoiceTelephone>
+      <ContactFacsimileTelephone><![CDATA[]]></ContactFacsimileTelephone>
+      <ContactElectronicMailAddress><![CDATA[]]></ContactElectronicMailAddress>
+    </ContactInformation>
+    <Fees><![CDATA[]]></Fees>
+    <AccessConstraints><![CDATA[]]></AccessConstraints>
+    <MaxWidth>4096</MaxWidth>
+    <MaxHeight>4096</MaxHeight>
+  </Service>
+  <Capability>
+    <Request>
+      <GetCapabilities>
+        <Format>application/vnd.ogc.wms_xml</Format>
+        <Format>text/xml</Format>
+        <DCPType>
+          <HTTP><Get><OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?"/></Get></HTTP>
+        </DCPType>
+      </GetCapabilities>
+      <GetMap>
+        <Format>image/bmp</Format>
+        <Format>image/jpeg</Format>
+        <Format>image/tiff</Format>
+        <Format>image/png</Format>
+        <Format>image/png8</Format>
+        <Format>image/png24</Format>
+        <Format>image/png32</Format>
+        <Format>image/gif</Format>
+        <Format>image/svg+xml</Format>
+        <DCPType>
+          <HTTP><Get><OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?"/></Get></HTTP>
+        </DCPType>
+      </GetMap>
+      <GetFeatureInfo>
+        <Format>application/vnd.esri.wms_raw_xml</Format>
+        <Format>application/vnd.esri.wms_featureinfo_xml</Format>
+        <Format>application/vnd.ogc.wms_xml</Format>
+        <Format>application/geo+json</Format>
+        <Format>text/xml</Format>
+        <Format>text/html</Format>
+        <Format>text/plain</Format>
+        <DCPType>
+          <HTTP><Get><OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?"/></Get></HTTP>
+        </DCPType>
+      </GetFeatureInfo>
+      <esri_wms:GetStyles>
+        <Format>application/vnd.ogc.sld+xml</Format>
+        <DCPType>
+          <HTTP><Get><OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?"/></Get></HTTP>
+        </DCPType>
+      </esri_wms:GetStyles>
+    </Request>
+    <Exception>
+      <Format>application/vnd.ogc.se_xml</Format>
+      <Format>application/vnd.ogc.se_inimage</Format>
+      <Format>application/vnd.ogc.se_blank</Format>
+      <Format>text/xml</Format>
+      <Format>XML</Format>
+    </Exception>
+    <Layer>
+      <Title><![CDATA[Layers]]></Title>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-179.229671</westBoundLongitude><eastBoundLongitude>179.856659</eastBoundLongitude><southBoundLatitude>-14.424688</southBoundLatitude><northBoundLatitude>71.499606</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-179.229671" miny="-14.424688" maxx="179.856659" maxy="71.499606"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.424688" miny="-179.229671" maxx="71.499606" maxy="179.856659"/>
+<BoundingBox CRS="EPSG:3857" minx="-19951755.681761" miny="-1622985.366653" maxx="20021551.747256" maxy="11575301.958305"/>
+<BoundingBox CRS="EPSG:102100" minx="-19951755.681761" miny="-1622985.366653" maxx="20021551.747256" maxy="11575301.958305"/>
+      <Layer queryable="1">
+        <Name>0</Name>
+        <Title><![CDATA[Waterbody - Large Scale]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-178.001454</westBoundLongitude><eastBoundLongitude>145.823953</eastBoundLongitude><southBoundLatitude>-14.339644</southBoundLatitude><northBoundLatitude>71.385805</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-178.001454" miny="-14.339644" maxx="145.823953" maxy="71.385805"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.339644" miny="-178.001454" maxx="71.385805" maxy="145.823953"/>
+<BoundingBox CRS="EPSG:3857" minx="-19815031.209577" miny="-1613212.084823" maxx="16233048.163305" maxy="11535495.863137"/>
+<BoundingBox CRS="EPSG:102100" minx="-19815031.209577" miny="-1613212.084823" maxx="16233048.163305" maxy="11535495.863137"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Waterbody - Large Scale]]></Title>
+          <LegendURL width="84" height="126">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=0" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MaxScaleDenominator>69188.541667</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>1</Name>
+        <Title><![CDATA[Waterbody - Small Scale (HI, PR, VI, Pacific Territories)]]></Title>
+        <Abstract><![CDATA[]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-170.783321</westBoundLongitude><eastBoundLongitude>145.796290</eastBoundLongitude><southBoundLatitude>-14.340181</southBoundLatitude><northBoundLatitude>22.221822</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-170.783321" miny="-14.340181" maxx="145.796290" maxy="22.221822"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.340181" miny="-170.783321" maxx="22.221822" maxy="145.796290"/>
+<BoundingBox CRS="EPSG:3857" minx="-19011512.377600" miny="-1613273.795400" maxx="16229968.755700" maxy="2538178.589300"/>
+<BoundingBox CRS="EPSG:102100" minx="-19011512.377600" miny="-1613273.795400" maxx="16229968.755700" maxy="2538178.589300"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Waterbody - Small Scale (HI, PR, VI, Pacific Territories)]]></Title>
+          <LegendURL width="84" height="108">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=1" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MinScaleDenominator>136494.420377</MinScaleDenominator>
+        <MaxScaleDenominator>545977.681508</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>2</Name>
+        <Title><![CDATA[Waterbody - Small Scale]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-124.689923</westBoundLongitude><eastBoundLongitude>-66.997866</eastBoundLongitude><southBoundLatitude>24.521429</southBoundLatitude><northBoundLatitude>49.384341</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-124.689923" miny="24.521429" maxx="-66.997866" maxy="49.384341"/>
+<BoundingBox CRS="EPSG:4326" minx="24.521429" miny="-124.689923" maxx="49.384341" maxy="-66.997866"/>
+<BoundingBox CRS="EPSG:3857" minx="-13880418.770900" miny="2817076.436700" maxx="-7458168.324800" maxy="6340329.509900"/>
+<BoundingBox CRS="EPSG:102100" minx="-13880418.770900" miny="2817076.436700" maxx="-7458168.324800" maxy="6340329.509900"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Waterbody - Small Scale]]></Title>
+          <LegendURL width="108" height="144">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=2" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MinScaleDenominator>69189.486607</MinScaleDenominator>
+        <MaxScaleDenominator>545977.681508</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>3</Name>
+        <Title><![CDATA[Area - Large Scale]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-179.229671</westBoundLongitude><eastBoundLongitude>179.856659</eastBoundLongitude><southBoundLatitude>-14.424688</southBoundLatitude><northBoundLatitude>71.499606</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-179.229671" miny="-14.424688" maxx="179.856659" maxy="71.499606"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.424688" miny="-179.229671" maxx="71.499606" maxy="179.856659"/>
+<BoundingBox CRS="EPSG:3857" minx="-19951755.681761" miny="-1622985.366653" maxx="20021551.747256" maxy="11575301.958305"/>
+<BoundingBox CRS="EPSG:102100" minx="-19951755.681761" miny="-1622985.366653" maxx="20021551.747256" maxy="11575301.958305"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Area - Large Scale]]></Title>
+          <LegendURL width="162" height="360">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=3" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MaxScaleDenominator>69188.541667</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>4</Name>
+        <Title><![CDATA[Area - Small Scale (HI, PR, VI, Pacific Territories)]]></Title>
+        <Abstract><![CDATA[]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-170.850020</westBoundLongitude><eastBoundLongitude>145.874998</eastBoundLongitude><southBoundLatitude>-14.383328</southBoundLatitude><northBoundLatitude>22.241673</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-170.850020" miny="-14.383328" maxx="145.874998" maxy="22.241673"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.383328" miny="-170.850020" maxx="22.241673" maxy="145.874998"/>
+<BoundingBox CRS="EPSG:3857" minx="-19018937.237100" miny="-1618231.826500" maxx="16238730.465600" maxy="2540565.787400"/>
+<BoundingBox CRS="EPSG:102100" minx="-19018937.237100" miny="-1618231.826500" maxx="16238730.465600" maxy="2540565.787400"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Area - Small Scale (HI, PR, VI, Pacific Territories)]]></Title>
+          <LegendURL width="132" height="162">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=4" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MinScaleDenominator>136494.420377</MinScaleDenominator>
+        <MaxScaleDenominator>545977.681508</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>5</Name>
+        <Title><![CDATA[Area - Small Scale]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-125.001247</westBoundLongitude><eastBoundLongitude>-66.885080</eastBoundLongitude><southBoundLatitude>24.500425</southBoundLatitude><northBoundLatitude>49.376578</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-125.001247" miny="24.500425" maxx="-66.885080" maxy="49.376578"/>
+<BoundingBox CRS="EPSG:4326" minx="24.500425" miny="-125.001247" maxx="49.376578" maxy="-66.885080"/>
+<BoundingBox CRS="EPSG:3857" minx="-13915075.115200" miny="2814506.682800" maxx="-7445613.017900" maxy="6339002.042700"/>
+<BoundingBox CRS="EPSG:102100" minx="-13915075.115200" miny="2814506.682800" maxx="-7445613.017900" maxy="6339002.042700"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Area - Small Scale]]></Title>
+          <LegendURL width="162" height="288">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=5" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MinScaleDenominator>69189.486607</MinScaleDenominator>
+        <MaxScaleDenominator>545977.681508</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>6</Name>
+        <Title><![CDATA[Flowline - Large Scale]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-179.150082</westBoundLongitude><eastBoundLongitude>179.775112</eastBoundLongitude><southBoundLatitude>-14.374093</southBoundLatitude><northBoundLatitude>71.390380</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-179.150082" miny="-14.374093" maxx="179.775112" maxy="71.390380"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.374093" miny="-179.150082" maxx="71.390380" maxy="179.775112"/>
+<BoundingBox CRS="EPSG:3857" minx="-19942895.935346" miny="-1617170.556898" maxx="20012473.914773" maxy="11537091.637642"/>
+<BoundingBox CRS="EPSG:102100" minx="-19942895.935346" miny="-1617170.556898" maxx="20012473.914773" maxy="11537091.637642"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Flowline - Large Scale]]></Title>
+          <LegendURL width="132" height="180">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=6" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MaxScaleDenominator>69188.541667</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>7</Name>
+        <Title><![CDATA[Flowline - Small Scale (HI, PR, VI, Pacific Territories)]]></Title>
+        <Abstract><![CDATA[]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-170.844490</westBoundLongitude><eastBoundLongitude>145.830649</eastBoundLongitude><southBoundLatitude>-14.373707</southBoundLatitude><northBoundLatitude>22.232711</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-170.844490" miny="-14.373707" maxx="145.830649" maxy="22.232711"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.373707" miny="-170.844490" maxx="22.232711" maxy="145.830649"/>
+<BoundingBox CRS="EPSG:3857" minx="-19018321.582000" miny="-1617126.218400" maxx="16233793.573700" maxy="2539487.972100"/>
+<BoundingBox CRS="EPSG:102100" minx="-19018321.582000" miny="-1617126.218400" maxx="16233793.573700" maxy="2539487.972100"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Flowline - Small Scale (HI, PR, VI, Pacific Territories)]]></Title>
+          <LegendURL width="108" height="144">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=7" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MinScaleDenominator>136494.420377</MinScaleDenominator>
+        <MaxScaleDenominator>545977.681508</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>8</Name>
+        <Title><![CDATA[Flowline - Small Scale]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-124.733191</westBoundLongitude><eastBoundLongitude>-66.949828</eastBoundLongitude><southBoundLatitude>24.630526</southBoundLatitude><northBoundLatitude>49.376622</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-124.733191" miny="24.630526" maxx="-66.949828" maxy="49.376622"/>
+<BoundingBox CRS="EPSG:4326" minx="24.630526" miny="-124.733191" maxx="49.376622" maxy="-66.949828"/>
+<BoundingBox CRS="EPSG:3857" minx="-13885235.298000" miny="2830430.874200" maxx="-7452820.734800" maxy="6339009.497200"/>
+<BoundingBox CRS="EPSG:102100" minx="-13885235.298000" miny="2830430.874200" maxx="-7452820.734800" maxy="6339009.497200"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Flowline - Small Scale]]></Title>
+          <LegendURL width="108" height="144">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=8" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MinScaleDenominator>69189.486607</MinScaleDenominator>
+        <MaxScaleDenominator>545977.681508</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>9</Name>
+        <Title><![CDATA[Flow Direction]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-179.150082</westBoundLongitude><eastBoundLongitude>179.775112</eastBoundLongitude><southBoundLatitude>-14.374093</southBoundLatitude><northBoundLatitude>71.390380</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-179.150082" miny="-14.374093" maxx="179.775112" maxy="71.390380"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.374093" miny="-179.150082" maxx="71.390380" maxy="179.775112"/>
+<BoundingBox CRS="EPSG:3857" minx="-19942895.935346" miny="-1617170.556898" maxx="20012473.914773" maxy="11537091.637642"/>
+<BoundingBox CRS="EPSG:102100" minx="-19942895.935346" miny="-1617170.556898" maxx="20012473.914773" maxy="11537091.637642"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Flow Direction]]></Title>
+          <LegendURL width="174" height="180">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=9" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MaxScaleDenominator>34124.635417</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>10</Name>
+        <Title><![CDATA[Line - Large Scale ]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-179.150139</westBoundLongitude><eastBoundLongitude>179.775170</eastBoundLongitude><southBoundLatitude>-14.374253</southBoundLatitude><northBoundLatitude>71.270728</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-179.150139" miny="-14.374253" maxx="179.775170" maxy="71.270728"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.374253" miny="-179.150139" maxx="71.270728" maxy="179.775170"/>
+<BoundingBox CRS="EPSG:3857" minx="-19942902.272730" miny="-1617188.924678" maxx="20012480.338336" maxy="11495481.715242"/>
+<BoundingBox CRS="EPSG:102100" minx="-19942902.272730" miny="-1617188.924678" maxx="20012480.338336" maxy="11495481.715242"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Line - Large Scale ]]></Title>
+          <LegendURL width="54" height="54">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=10" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MaxScaleDenominator>68247.210188</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>11</Name>
+        <Title><![CDATA[Point Event]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-170.716881</westBoundLongitude><eastBoundLongitude>145.781245</eastBoundLongitude><southBoundLatitude>-14.317755</southBoundLatitude><northBoundLatitude>71.389564</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-170.716881" miny="-14.317755" maxx="145.781245" maxy="71.389564"/>
+<BoundingBox CRS="EPSG:4326" minx="-14.317755" miny="-170.716881" maxx="71.389564" maxy="145.781245"/>
+<BoundingBox CRS="EPSG:3857" minx="-19004116.262444" miny="-1610697.203629" maxx="16228293.979702" maxy="11536807.080047"/>
+<BoundingBox CRS="EPSG:102100" minx="-19004116.262444" miny="-1610697.203629" maxx="16228293.979702" maxy="11536807.080047"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Point Event]]></Title>
+          <LegendURL width="18" height="18">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=11" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MaxScaleDenominator>288206.845238</MaxScaleDenominator>
+      </Layer>
+      <Layer queryable="1">
+        <Name>12</Name>
+        <Title><![CDATA[Point]]></Title>
+        <Abstract><![CDATA[Abstract:
+The National Hydrography Dataset (NHD) is a feature-based database that interconnects and uniquely identifies the stream segments or reaches that make up the nation's surface water drainage system.  NHD data was originally developed at 1:100,000-scale and exists at that scale for the whole country. This high-resolution NHD, generally developed at 1:24,000/1:12,000 scale, adds detail to the original 1:100,000-scale NHD. (Data for Alaska, Puerto Rico and the Virgin Islands was developed at high-resolution, not 1:100,000 scale.) Local resolution NHD is being developed where partners and data exist. The NHD contains reach codes for networked features, flow direction, names, and centerline representations for areal water bodies. Reaches are also defined on waterbodies and the approximate shorelines of the Great Lakes, the Atlantic and Pacific Oceans and the Gulf of Mexico. The NHD also incorporates the National Spatial Data Infrastructure framework criteria established by the Federal Geographic Data Committee.  Use the metadata link, http://nhdgeo.usgs.gov/metadata/nhd_high.htm, for additional information.
+Purpose:
+The NHD is a national framework for assigning reach addresses to water-related entities, such as industrial discharges, drinking water supplies, fish habitat areas, wild and scenic rivers. Reach addresses establish the locations of these entities relative to one another within the NHD surface water drainage network, much like addresses on streets. Once linked to the NHD by their reach addresses, the upstream/downstream relationships of these water-related entities--and any associated information about them--can be analyzed using software tools ranging from spreadsheets to geographic information systems (GIS). GIS can also be used to combine NHD-based network analysis with other data layers, such as soils, land use and population, to help understand and display their respective effects upon one another. Furthermore, because the NHD provides a nationally consistent framework for addressing and analysis, water-related information linked to reach addresses by one organization (national, state, local) can be shared with other organizations and easily integrated into many different types of applications to the benefit of all.]]></Abstract>
+<CRS>CRS:84</CRS>
+<CRS>EPSG:4326</CRS>
+<CRS>EPSG:3857</CRS>
+ <!-- alias 3857 -->
+<CRS>EPSG:102100</CRS>
+<EX_GeographicBoundingBox><westBoundLongitude>-167.378534</westBoundLongitude><eastBoundLongitude>145.791213</eastBoundLongitude><southBoundLatitude>13.260837</southBoundLatitude><northBoundLatitude>70.681860</northBoundLatitude></EX_GeographicBoundingBox>
+<BoundingBox CRS="CRS:84" minx="-167.378534" miny="13.260837" maxx="145.791213" maxy="70.681860"/>
+<BoundingBox CRS="EPSG:4326" minx="13.260837" miny="-167.378534" maxx="70.681860" maxy="145.791213"/>
+<BoundingBox CRS="EPSG:3857" minx="-18632493.124020" miny="1489548.053053" maxx="16229403.630809" maxy="11294359.822449"/>
+<BoundingBox CRS="EPSG:102100" minx="-18632493.124020" miny="1489548.053053" maxx="16229403.630809" maxy="11294359.822449"/>
+        <Style>
+          <Name>default</Name>
+          <Title><![CDATA[Point]]></Title>
+          <LegendURL width="66" height="54">
+            <Format>image/png</Format>
+            <OnlineResource xlink:href="https://hydro.nationalmap.gov:443/arcgis/services/nhd/MapServer/WMSServer?request=GetLegendGraphic%26version=1.3.0%26format=image/png%26layer=12" xlink:type="simple" xmlns:xlink="http://www.w3.org/1999/xlink" />
+          </LegendURL>
+        </Style>
+        <MaxScaleDenominator>288206.845238</MaxScaleDenominator>
+      </Layer>
+    </Layer>
+  </Capability>
+</WMS_Capabilities>

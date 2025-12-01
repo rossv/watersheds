@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
-  import * as L from "leaflet";
+  import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import markerIcon2xUrl from "leaflet/dist/images/marker-icon-2x.png";
   import markerIconUrl from "leaflet/dist/images/marker-icon.png";
@@ -23,7 +23,8 @@
   let soilLayer: L.TileLayer.WMS | null = null;
   let hydroLayer: L.TileLayer.WMS | null = null;
 
-  let activeLayer: "none" | "nlcd" | "soil" | "hydro" = "nlcd";
+  let activeLayer: "none" | "nlcd" | "soil" = "nlcd";
+  let showStreams = false;
 
   const COORD_DECIMALS = 6;
   const COORD_FACTOR = 10 ** COORD_DECIMALS;
@@ -79,14 +80,15 @@
       soilLayer.remove();
       soilLayer = null;
     }
+    // Hydro layer is handled separately now, but we clean it up here to be safe if we need a full reset
+    // Actually, let's keep the logic clean: this function updates ALL WMS layers based on state.
     if (hydroLayer) {
       hydroLayer.remove();
       hydroLayer = null;
     }
 
-    if (!watershed) return;
-
-    if (activeLayer === "nlcd") {
+    // 1. Base Overlays (Mutually Exclusive) - Only if delineated (or if we want to allow them earlier, but user asked for streams)
+    if (watershed && activeLayer === "nlcd") {
       nlcdLayer = L.tileLayer
         .wms("https://www.mrlc.gov/geoserver/wms", {
           layers: "mrlc_display:NLCD_2021_Land_Cover_L48",
@@ -96,7 +98,7 @@
           attribution: "MRLC NLCD 2021",
         })
         .addTo(map);
-    } else if (activeLayer === "soil") {
+    } else if (watershed && activeLayer === "soil") {
       soilLayer = L.tileLayer
         .wms("https://SDMDataAccess.sc.egov.usda.gov/Spatial/SDM.wms", {
           layers: "MapunitPoly",
@@ -106,16 +108,20 @@
           attribution: "USDA Web Soil Survey",
         })
         .addTo(map);
-    } else if (activeLayer === "hydro") {
+    }
+
+    // 2. Streams Overlay (Independent)
+    if (showStreams) {
       hydroLayer = L.tileLayer
         .wms(
           "https://hydro.nationalmap.gov/arcgis/services/nhd/MapServer/WMSServer",
           {
-            layers: "0,1,2,3,4,5,6,7,8", // All Hydrography layers (Large/Small scale, Waterbodies, Flowlines, Areas)
+            layers: "6,8", // Layer 6 (Large Scale) and 8 (Small Scale) for flowlines
             format: "image/png",
             transparent: true,
-            opacity: 0.6,
+            opacity: 0.8, // Increased opacity for visibility
             attribution: "USGS NHD",
+            zIndex: 10, // Ensure it's on top
           },
         )
         .addTo(map);
@@ -171,7 +177,7 @@
   }
 
   // React to activeLayer change
-  $: if (delineated && map && activeLayer) {
+  $: if (map && (activeLayer || showStreams !== undefined)) {
     updateWmsLayers();
   }
 
@@ -196,8 +202,14 @@
       aria-describedby="map-help"
     ></div>
 
-    {#if delineated}
-      <div class="layer-control">
+    <div class="layer-control">
+      <label class="streams-toggle">
+        <input type="checkbox" bind:checked={showStreams} />
+        <span style="font-weight: 600; color: #0066cc;">Show Streams</span>
+      </label>
+
+      {#if delineated}
+        <div class="divider"></div>
         <label>
           <input type="radio" bind:group={activeLayer} value="none" /> None
         </label>
@@ -207,11 +219,8 @@
         <label>
           <input type="radio" bind:group={activeLayer} value="soil" /> Soil
         </label>
-        <label>
-          <input type="radio" bind:group={activeLayer} value="hydro" /> Hydro
-        </label>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 
   <p id="map-help" class="map-help">
@@ -276,5 +285,11 @@
     .map-container {
       min-height: 520px;
     }
+  }
+
+  .divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 0.25rem 0;
   }
 </style>

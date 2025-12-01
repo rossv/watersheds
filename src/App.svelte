@@ -203,6 +203,7 @@
     font-weight: 800;
     letter-spacing: -0.025em;
     background: linear-gradient(135deg, var(--primary-color), #06b6d4);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
