@@ -33,6 +33,11 @@ export default defineConfig(({ command }) => ({
         target: 'https://www.mrlc.gov',
         changeOrigin: true,
         rewrite: (path: string) => path.replace(/^\/mrlc-api/, '')
+      },
+      '/geocoding-api': {
+        target: 'https://api.bigdatacloud.net',
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/geocoding-api/, '')
       }
     }
   },

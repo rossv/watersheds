@@ -1,61 +1,12 @@
+import { fetchWithProxy } from "../http";
+
 /**
  * NOAA/HDSC client with proxy-friendly fetch helpers.
  */
-function isDev() {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return !!(import.meta as any)?.env?.DEV;
-  } catch {
-    return false;
-  }
-}
-
-function proxify(url: string): string {
-  if (isDev()) return url;
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-}
 
 export interface RainfallTable {
   aris: string[];
   rows: { label: string; values: Record<string, number> }[];
-}
-
-/**
- * Low-level fetch that returns text (CSV/HTML) and plays nice with the proxy.
- */
-export async function fetchTextThroughProxy(url: string): Promise<string> {
-  const target = proxify(url);
-  const isProxy = target.includes('allorigins.win');
-
-  // Only add custom headers if NOT using the external proxy.
-  // The external proxy handles the request to the target, and adding headers here
-  // can cause CORS preflight failures or be rejected by the proxy.
-  const headers: HeadersInit = {};
-  if (!isProxy) {
-    headers['Accept'] = "text/plain, text/csv, text/html;q=0.8, */*;q=0.5";
-    headers['Origin'] = typeof window !== "undefined" ? window.location.origin : "https://example.org";
-    headers['X-Requested-With'] = "fetch";
-  }
-
-  const res = await fetch(target, {
-    method: "GET",
-    headers
-  });
-
-  const ct = res.headers.get("content-type") || "";
-
-  if (!res.ok) {
-    const preview = await safePreview(res);
-    throw new Error(`Rainfall fetch failed (${res.status}) — ${preview}`);
-  }
-
-  // NOAA endpoints usually return text, sometimes with odd content types.
-  if (!/text|csv|json/i.test(ct)) {
-    // Still try to read body; caller decides how to parse.
-    return await res.text();
-  }
-
-  return await res.text();
 }
 
 function buildRainfallUrl(lat: number, lon: number): string {
@@ -79,8 +30,26 @@ function buildRainfallUrl(lat: number, lon: number): string {
  * Convenience: fetch a NOAA/HDSC CSV using latitude/longitude.
  */
 export async function fetchRainfallCSV(lat: number, lon: number): Promise<string> {
-  const url = buildRainfallUrl(lat, lon);
-  return fetchTextThroughProxy(url);
+  const directUrl = buildRainfallUrl(lat, lon);
+  const params = new URL(directUrl).search;
+
+  const res = await fetchWithProxy({
+    url: directUrl,
+    devProxyUrl: `/noaa-api/fe_text_mean.csv${params}`,
+    init: {
+      headers: {
+        "Accept": "text/plain, text/csv, text/html;q=0.8, */*;q=0.5",
+        "X-Requested-With": "fetch"
+      }
+    }
+  });
+
+  if (!res.ok) {
+    const preview = await safePreview(res);
+    throw new Error(`Rainfall fetch failed (${res.status}) — ${preview}`);
+  }
+
+  return await res.text();
 }
 
 /**

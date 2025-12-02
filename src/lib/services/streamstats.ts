@@ -188,9 +188,11 @@ function lonLatToWebMercator(lon: number, lat: number): [number, number] {
  */
 export async function fetchState(lat: number, lon: number): Promise<string | undefined> {
   try {
-    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
+    const directUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
+    const params = new URL(directUrl).search;
     const response = await fetchWithProxy({
-      url,
+      url: directUrl,
+      devProxyUrl: `/geocoding-api/data/reverse-geocode-client${params}`,
       init: {
         headers: {
           "User-Agent": "WatershedResponseExplorer/1.0"

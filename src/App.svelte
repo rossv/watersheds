@@ -7,6 +7,7 @@
   import RainfallPanel from "./lib/components/RainfallPanel.svelte";
   import RunoffPanel from "./lib/components/RunoffPanel.svelte";
   import SavedScenarios from "./lib/components/SavedScenarios.svelte";
+  import ProgressBox from "./lib/components/ProgressBox.svelte";
   import StatusBanner from "./lib/components/StatusBanner.svelte";
   import ThemeToggle from "./lib/components/ThemeToggle.svelte";
   import { actions, appState } from "./lib/store";
@@ -30,6 +31,7 @@
         <ThemeToggle />
       </div>
     </div>
+    <StatusBanner message={$appState.error} />
   </header>
 
   <div class="main-layout">
@@ -46,6 +48,7 @@
         </section>
 
         <SavedScenarios scenarios={$appState.savedScenarios} />
+        <ProgressBox logs={$appState.progressLog} />
         <AnalyticsSidebar />
       </div>
     </aside>
@@ -68,6 +71,7 @@
             lat={$appState.lat}
             lon={$appState.lon}
             watershed={$appState.watershed}
+            snappedFlowline={$appState.snappedFlowline}
             delineated={$appState.delineated}
             onLocationChange={actions.setLatLon}
           />

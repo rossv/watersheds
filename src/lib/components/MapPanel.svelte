@@ -6,17 +6,21 @@
   import markerIconUrl from "leaflet/dist/images/marker-icon.png";
   import markerShadowUrl from "leaflet/dist/images/marker-shadow.png";
   import type { WatershedGeoJSON } from "../services/delineation";
+  import type { Feature, LineString } from "geojson";
 
   export let lat: number;
   export let lon: number;
   export let watershed: WatershedGeoJSON | null;
+  export let snappedFlowline: Feature<LineString> | null = null;
   export let delineated: boolean;
   export let onLocationChange: (lat: number, lon: number) => void;
 
   let mapDiv: HTMLDivElement;
   let map: L.Map;
+  let baseLayer: L.TileLayer;
   let marker: L.Marker | null = null;
   let watershedLayer: L.GeoJSON | null = null;
+  let snappedFlowlineLayer: L.GeoJSON | null = null;
 
   // WMS Layers
   let nlcdLayer: L.TileLayer.WMS | null = null;
@@ -50,9 +54,12 @@
     if (!mapDiv) return;
 
     map = L.map(mapDiv).setView([lat, lon], 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(map);
+    baseLayer = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution: "&copy; OpenStreetMap contributors",
+      },
+    ).addTo(map);
 
     marker = L.marker([lat, lon], {
       draggable: true,
@@ -114,14 +121,14 @@
     if (showStreams) {
       hydroLayer = L.tileLayer
         .wms(
-          "https://hydro.nationalmap.gov/arcgis/services/nhd/MapServer/WMSServer",
+          "https://basemap.nationalmap.gov/arcgis/services/USGSHydroCached/MapServer/WMSServer",
           {
-            layers: "6,8", // Layer 6 (Large Scale) and 8 (Small Scale) for flowlines
+            layers: "0",
             format: "image/png",
             transparent: true,
-            opacity: 0.8, // Increased opacity for visibility
-            attribution: "USGS NHD",
-            zIndex: 10, // Ensure it's on top
+            version: "1.3.0",
+            attribution: "USGS Hydro Cached",
+            zIndex: 1000,
           },
         )
         .addTo(map);
@@ -135,6 +142,10 @@
       watershedLayer.remove();
       watershedLayer = null;
     }
+    if (snappedFlowlineLayer) {
+      snappedFlowlineLayer.remove();
+      snappedFlowlineLayer = null;
+    }
 
     if (!watershed) return;
 
@@ -147,6 +158,18 @@
         fillOpacity: 0.3,
       },
     }).addTo(map);
+
+    // Add Snapped Flowline Layer if available
+    if (snappedFlowline) {
+      snappedFlowlineLayer = L.geoJSON(snappedFlowline as any, {
+        style: {
+          color: "#dc2626", // Red
+          weight: 4,
+          dashArray: "10, 10",
+          opacity: 0.8,
+        },
+      }).addTo(map);
+    }
 
     try {
       const bounds = watershedLayer.getBounds();
@@ -173,12 +196,20 @@
       watershedLayer.remove();
       watershedLayer = null;
     }
+    if (snappedFlowlineLayer) {
+      snappedFlowlineLayer.remove();
+      snappedFlowlineLayer = null;
+    }
     updateWmsLayers();
   }
 
   // React to activeLayer change
   $: if (map && (activeLayer || showStreams !== undefined)) {
     updateWmsLayers();
+  }
+
+  $: if (baseLayer) {
+    baseLayer.setOpacity(showStreams ? 0.5 : 1.0);
   }
 
   onMount(() => {
